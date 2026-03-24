@@ -187,7 +187,28 @@
 
             // Frame Cells
             var cells = '';
+            var brackets = '';
             var activeKey = null;
+
+            // Generate visual brackets for active loops
+            if (l.loops) {
+                Object.keys(l.loops).forEach(function (k) {
+                    var prev = parseInt(k);
+                    var L = l.loops[prev];
+                    if (L && L.active) {
+                        var startF = L.mode === 'relative' ? prev - L.val : L.val;
+                        var endF = prev; // Span includes the loop node itself
+
+                        startF = Math.max(0, startF);
+                        if (endF > startF) {
+                            var leftPx = startF * 18;
+                            var widthPx = (endF - startF + 1) * 18;
+                            // Add slight margin so the brackets don't touch adjacent cells seamlessly
+                            brackets += '<div class="tl-loop-bracket" style="left:' + (leftPx + 2) + 'px; width:' + (widthPx - 4) + 'px;"></div>';
+                        }
+                    }
+                });
+            }
             for (var i = 0; i < max; i++) {
                 var cc = i === cur ? ' cur' : '';
                 var isKey = l.frames[i] !== undefined;
@@ -195,15 +216,22 @@
                 var content = '';
                 if (isKey) {
                     var twCls = (l.tweens && l.tweens[i]) ? ' tween' : '';
+                    var lpCls = (l.loops && l.loops[i] && l.loops[i].active) ? ' loop' : '';
                     // Check if this node is in our selection array
                     var selCls = VF.tlSelection.find(function (s) { return s.f === i && s.l === l.id && s.type === 'draw'; }) ? ' tl-selected' : '';
-                    content = '<div class="tl-dot keyframe' + twCls + selCls + '" data-f="' + i + '" data-l="' + l.id + '"></div>';
+                    content = '<div class="tl-dot keyframe' + twCls + lpCls + selCls + '" data-f="' + i + '" data-l="' + l.id + '"></div>';
                 } else if (activeKey !== null) {
-                    content = '<div class="tl-exposure"></div>';
+                    var loopData = l.loops && l.loops[activeKey];
+                    if (loopData && loopData.active) {
+                        content = '<div class="tl-exposure loop-exposure"></div>';
+                    } else {
+                        content = '<div class="tl-exposure"></div>';
+                    }
                 }
                 cells += '<div class="tl-cell' + cc + '" data-f="' + i + '" data-l="' + l.id + '" style="position:relative">' + content + '</div>';
             }
-            rows += '<div class="tl-row" data-l="' + l.id + '">' + cells + '</div>';
+            // Inject brackets behind the cells
+            rows += '<div class="tl-row" data-l="' + l.id + '">' + brackets + cells + '</div>';
 
             // Transform / Tween Cells
             if (!l.transforms) l.transforms = {};
@@ -400,8 +428,19 @@
 
                 VF.saveHistory();
 
-                if (act === 'toggle-loop') {
-                    if (res && res.data) res.data._loop = !res.data._loop;
+                if (act === 'loop-settings') {
+                    $dotCtx.hide();
+                    var loopData = layer.loops && layer.loops[ctxF] ? layer.loops[ctxF] : { active: false, mode: 'relative', val: 1 };
+                    $('#ls-loop-on').toggleClass('on', loopData.active);
+                    $('#ls-loop-mode').val(loopData.mode);
+                    $('#ls-loop-val').val(loopData.val);
+                    VF._activeLoopCtx = { layer: layer, frame: ctxF };
+
+                    // Enforce rules before showing the modal
+                    if (VF.validateLoopInput) VF.validateLoopInput();
+
+                    $('#modal-loop-settings').css('display', 'flex');
+                    return; // exit early, no rendering yet
                 }
                 else if (act === 'toggle-tween') {
                     if (layer.frames[ctxF] === undefined) return;
@@ -846,6 +885,64 @@
 
         $(window).on('resize', function () {
             if (VF.syncTimelineScrollbar) VF.syncTimelineScrollbar();
+        });
+
+        // Loop Settings Modal Bindings
+        // Loop Input Validation
+        VF.validateLoopInput = function () {
+            var ctx = VF._activeLoopCtx;
+            if (!ctx) return;
+
+            var mode = $('#ls-loop-mode').val();
+            var $valInput = $('#ls-loop-val');
+            var currentVal = parseInt($valInput.val()) || 0;
+            var currentFrame = ctx.frame;
+
+            // Frame 0 cannot loop back to anything
+            if (currentFrame === 0) {
+                $valInput.val(0).attr('min', 0).attr('max', 0).prop('disabled', true);
+                return;
+            } else {
+                $valInput.prop('disabled', false);
+            }
+
+            if (mode === 'relative') {
+                // Must look back at least 1 frame, and cannot look back further than the current frame
+                $valInput.attr('min', 1);
+                $valInput.attr('max', currentFrame);
+                if (currentVal < 1) $valInput.val(1);
+                if (currentVal > currentFrame) $valInput.val(currentFrame);
+            } else {
+                // Absolute: Must target a frame between 0 and the frame right before this keyframe
+                var maxAbsolute = currentFrame - 1;
+                $valInput.attr('min', 0);
+                $valInput.attr('max', maxAbsolute);
+                if (currentVal < 0) $valInput.val(0);
+                if (currentVal > maxAbsolute) $valInput.val(maxAbsolute);
+            }
+        };
+
+        // Loop Settings Modal Bindings
+        $('#ls-loop-mode').on('change', VF.validateLoopInput);
+        $('#ls-loop-val').on('input change blur', VF.validateLoopInput);
+
+        $('#ls-loop-cancel').on('click', function () { $('#modal-loop-settings').hide(); });
+        $('#ls-loop-on').on('click', function () { $(this).toggleClass('on'); });
+        $('#ls-loop-apply').on('click', function () {
+            var ctx = VF._activeLoopCtx;
+            if (!ctx) return;
+            var l = ctx.layer;
+            if (!l.loops) l.loops = {};
+            l.loops[ctx.frame] = {
+                active: $('#ls-loop-on').hasClass('on'),
+                mode: $('#ls-loop-mode').val(),
+                val: Math.max(0, parseInt($('#ls-loop-val').val()) || 1)
+            };
+            l.cache = {}; // clear cached drawings
+            VF.saveHistory();
+            $('#modal-loop-settings').hide();
+            VF.uiTimeline();
+            VF.render();
         });
     });
 

@@ -843,6 +843,31 @@
         </div>
     </div>
 
+    <div id="modal-loop-settings" class="mo-ov" style="display:none; z-index: 150;">
+        <div class="mo-box" style="min-width:320px; max-width:360px;">
+            <div class="mo-title">Loop Settings</div>
+            <div class="mo-row">
+                <label>Enable Loop</label>
+                <div class="tgl" id="ls-loop-on"></div>
+            </div>
+            <div class="mo-row">
+                <label>Loop Mode</label>
+                <select id="ls-loop-mode">
+                    <option value="relative">Relative (Frames back)</option>
+                    <option value="absolute">Absolute (Frame #)</option>
+                </select>
+            </div>
+            <div class="mo-row">
+                <label>Target Value</label>
+                <input id="ls-loop-val" type="number" min="0" value="1">
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+                <button class="btn" id="ls-loop-cancel">Cancel</button>
+                <button class="btn btn-p" id="ls-loop-apply">Apply</button>
+            </div>
+        </div>
+    </div>
+
     <div id="modal-about" class="mo-ov" style="display:none">
         <div class="mo-box about-box">
             <div class="about-header">
@@ -899,7 +924,7 @@
     <div class="ctx" id="dot-ctx" style="display:none">
         <div class="ctx-i" data-act="copy-frame">Copy Keyframe</div>
         <div class="ctx-i" data-act="paste-frame">Paste Keyframe</div>
-        <div class="ctx-i" data-act="toggle-loop">Toggle Loop ◎</div>
+        <div class="ctx-i" data-act="loop-settings">Loop Settings</div>
         <div class="ctx-i" data-act="toggle-tween" style="color:var(--success)">Toggle Tween ⤍</div>
         <hr style="margin:4px 0; border:none; border-top:1px solid var(--border)">
         <div class="ctx-i" data-act="delete-keyframe">Delete Keyframe</div>

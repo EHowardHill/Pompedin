@@ -13,7 +13,7 @@
         var l = {
             id: id, name: name || ('Layer ' + id), type: type || 'vector',
             vis: true, opacity: 1, z: maxZ + 1, frames: {},
-            tweens: {}, transforms: {}, /* ── NEW: Transform pool ── */
+            tweens: {}, transforms: {}, loops: {}, /* ── NEW: Transform & Loop pool ── */
             imgData: null, cache: {},
             blendMode: 'normal',
             locked: false,
@@ -56,7 +56,8 @@
         dup.opacity = src.opacity;
         dup.imgData = src.imgData;
         dup.tweens = src.tweens ? JSON.parse(JSON.stringify(src.tweens)) : {};
-        dup.transforms = src.transforms ? JSON.parse(JSON.stringify(src.transforms)) : {}; /* ── Dup transforms ── */
+        dup.transforms = src.transforms ? JSON.parse(JSON.stringify(src.transforms)) : {};
+        dup.loops = src.loops ? JSON.parse(JSON.stringify(src.loops)) : {};
         dup.blendMode = src.blendMode || 'normal';
         dup.locked = false;
         dup.reference = src.reference || false;

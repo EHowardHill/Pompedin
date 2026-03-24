@@ -121,8 +121,9 @@ body {
 ::-webkit-scrollbar-thumb {
     background: var(--text-dim);
     border-radius: 5px;
-    border: 2px solid var(--bg-dark); 
-    background-clip: padding-box; /* Required for the border-padding trick to work */
+    border: 2px solid var(--bg-dark);
+    background-clip: padding-box;
+    /* Required for the border-padding trick to work */
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -586,8 +587,10 @@ input[type="range"]::-webkit-slider-thumb {
 
 #tl-scroll {
     flex: 1;
-    min-width: 0;  /* Forces Flexbox to allow shrinking, triggering the X scrollbar */
-    min-height: 0; /* Prevents vertical blowout */
+    min-width: 0;
+    /* Forces Flexbox to allow shrinking, triggering the X scrollbar */
+    min-height: 0;
+    /* Prevents vertical blowout */
     overflow-x: auto;
     overflow-y: auto;
     position: relative;
@@ -1019,7 +1022,8 @@ input[type="range"]::-webkit-slider-thumb {
     background: var(--bg-dark);
     gap: 4px;
     position: sticky;
-    top: 16px; /* Changed from 0 to 16px */
+    top: 16px;
+    /* Changed from 0 to 16px */
     z-index: 10;
 }
 
@@ -1186,4 +1190,23 @@ input[type="range"]::-webkit-slider-thumb {
     pointer-events: none;
     z-index: 50;
     display: none;
+}
+
+/* Loop Exposure Pattern */
+.tl-exposure.loop-exposure {
+    background: repeating-linear-gradient(45deg, var(--orange), var(--orange) 3px, transparent 3px, transparent 6px) !important;
+    opacity: 0.6;
+}
+
+/* Loop Range Bracket */
+.tl-loop-bracket {
+    position: absolute;
+    top: 2px;
+    height: 6px;
+    border: 2px solid var(--orange);
+    border-bottom: none;
+    border-radius: 3px 3px 0 0;
+    opacity: 0.85;
+    pointer-events: none;
+    z-index: 4;
 }

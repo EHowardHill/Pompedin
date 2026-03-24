@@ -103,17 +103,20 @@
         var P = getP();
         var cam = VF.getCameraAtFrame ? VF.getCameraAtFrame(S.tl.frame) : { rotation: 0 };
 
+        // Convert global center to the layer's local coordinate space
+        var localCenter = pl && pl.matrix ? pl.globalToLocal(center) : center;
+
         if (item.data && item.data.isTextureStroke) {
-            return mirrorTextureItem(item, axis, center, pl, cam.rotation);
+            return mirrorTextureItem(item, axis, localCenter, pl, cam.rotation);
         }
 
         var clone = item.clone();
         // Un-rotate, apply perfect mathematical mirroring, and re-rotate
-        clone.rotate(-cam.rotation, center);
-        if (axis === 'h') clone.scale(-1, 1, center);
-        else if (axis === 'v') clone.scale(1, -1, center);
-        else clone.scale(-1, -1, center);
-        clone.rotate(cam.rotation, center);
+        clone.rotate(-cam.rotation, localCenter);
+        if (axis === 'h') clone.scale(-1, 1, localCenter);
+        else if (axis === 'v') clone.scale(1, -1, localCenter);
+        else clone.scale(-1, -1, localCenter);
+        clone.rotate(cam.rotation, localCenter);
 
         return clone;
     }

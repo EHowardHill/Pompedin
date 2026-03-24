@@ -1,13 +1,18 @@
-use base64::{ engine::general_purpose, Engine as _ };
+use base64::{engine::general_purpose, Engine as _};
 use chrono::Local;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::fs;
-use std::path::{ Path, PathBuf };
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use tauri::Manager;
 use uuid::Uuid;
+
+#[cfg(not(target_os = "android"))]
 use tauri_plugin_shell::ShellExt;
+
+#[cfg(target_os = "android")]
+mod mp4_plugin;
 
 // ═══════════════════════════════════════════════════
 //   APP STATE
@@ -22,7 +27,9 @@ struct AppState {
 // ═══════════════════════════════════════════════════
 
 fn data_dir(app: &tauri::AppHandle) -> PathBuf {
-    app.path().app_data_dir().expect("failed to resolve app data dir")
+    app.path()
+        .app_data_dir()
+        .expect("failed to resolve app data dir")
 }
 
 fn brush_dir(app: &tauri::AppHandle) -> PathBuf {
@@ -66,8 +73,7 @@ fn is_audio_ext(ext: &str) -> bool {
 #[tauri::command]
 fn list_brushes(app: tauri::AppHandle) -> Vec<String> {
     let dir = brush_dir(&app);
-    let mut files: Vec<String> = fs
-        ::read_dir(&dir)
+    let mut files: Vec<String> = fs::read_dir(&dir)
         .into_iter()
         .flatten()
         .filter_map(|e| e.ok())
@@ -125,7 +131,11 @@ fn read_image_file(path: String) -> Result<String, String> {
         "svg" => "image/svg+xml",
         _ => "image/png",
     };
-    Ok(format!("data:{};base64,{}", mime, general_purpose::STANDARD.encode(&data)))
+    Ok(format!(
+        "data:{};base64,{}",
+        mime,
+        general_purpose::STANDARD.encode(&data)
+    ))
 }
 
 /// Read any file and return (base64_data, filename).
@@ -170,10 +180,7 @@ fn save_audio(app: tauri::AppHandle, data: String, filename: String) -> Result<S
     let dir = audio_dir(&app);
 
     // Validate extension
-    let ext = filename
-        .rfind('.')
-        .map(|i| &filename[i..])
-        .unwrap_or("");
+    let ext = filename.rfind('.').map(|i| &filename[i..]).unwrap_or("");
     if !is_audio_ext(ext) {
         return Err(format!("Unsupported audio format: {ext}"));
     }
@@ -251,7 +258,11 @@ fn remove_audio(app: tauri::AppHandle) -> Result<u32, String> {
 /// Decode a base64 PNG and write it to the given path (from a save dialog).
 #[tauri::command]
 fn export_png(image: String, path: String) -> Result<(), String> {
-    let image_data = if let Some(pos) = image.find(',') { &image[pos + 1..] } else { &image };
+    let image_data = if let Some(pos) = image.find(',') {
+        &image[pos + 1..]
+    } else {
+        &image
+    };
     let bytes = general_purpose::STANDARD
         .decode(image_data)
         .map_err(|e| format!("Failed to decode image: {e}"))?;
@@ -275,7 +286,7 @@ fn save_project(
     app: tauri::AppHandle,
     state: serde_json::Value,
     name: Option<String>,
-    is_autosave: bool
+    is_autosave: bool,
 ) -> Result<String, String> {
     let dir = projects_dir(&app);
     let filename = if is_autosave {
@@ -286,9 +297,8 @@ fn save_project(
         format!("{n}_{ts}.json")
     };
     let path = dir.join(&filename);
-    let json = serde_json
-        ::to_string_pretty(&state)
-        .map_err(|e| format!("Serialization error: {e}"))?;
+    let json =
+        serde_json::to_string_pretty(&state).map_err(|e| format!("Serialization error: {e}"))?;
     fs::write(&path, json).map_err(|e| format!("Write error: {e}"))?;
     Ok(filename)
 }
@@ -296,9 +306,8 @@ fn save_project(
 /// Save project to an arbitrary path chosen by the user via native save dialog.
 #[tauri::command]
 fn save_project_to_path(state: serde_json::Value, path: String) -> Result<(), String> {
-    let json = serde_json
-        ::to_string_pretty(&state)
-        .map_err(|e| format!("Serialization error: {e}"))?;
+    let json =
+        serde_json::to_string_pretty(&state).map_err(|e| format!("Serialization error: {e}"))?;
     fs::write(&path, json).map_err(|e| format!("Write error: {e}"))?;
     Ok(())
 }
@@ -311,9 +320,8 @@ fn load_project(app: tauri::AppHandle, filename: String) -> Result<serde_json::V
         return Err("File not found".to_string());
     }
     let contents = fs::read_to_string(&path).map_err(|e| format!("Read error: {e}"))?;
-    let data: serde_json::Value = serde_json
-        ::from_str(&contents)
-        .map_err(|e| format!("Parse error: {e}"))?;
+    let data: serde_json::Value =
+        serde_json::from_str(&contents).map_err(|e| format!("Parse error: {e}"))?;
     Ok(data)
 }
 
@@ -325,9 +333,8 @@ fn load_project_from_path(path: String) -> Result<serde_json::Value, String> {
         return Err("File not found".to_string());
     }
     let contents = fs::read_to_string(p).map_err(|e| format!("Read error: {e}"))?;
-    let data: serde_json::Value = serde_json
-        ::from_str(&contents)
-        .map_err(|e| format!("Parse error: {e}"))?;
+    let data: serde_json::Value =
+        serde_json::from_str(&contents).map_err(|e| format!("Parse error: {e}"))?;
     Ok(data)
 }
 
@@ -376,7 +383,11 @@ fn mp4_start(app: tauri::AppHandle, state: tauri::State<'_, AppState>) -> Result
     let session_id = Uuid::new_v4().to_string()[..12].to_string();
     let session_dir = exports_dir(&app).join(format!("mp4_{session_id}"));
     fs::create_dir_all(&session_dir).map_err(|e| format!("Failed to create session dir: {e}"))?;
-    state.mp4_sessions.lock().unwrap().insert(session_id.clone(), session_dir);
+    state
+        .mp4_sessions
+        .lock()
+        .unwrap()
+        .insert(session_id.clone(), session_dir);
     Ok(session_id)
 }
 
@@ -386,12 +397,18 @@ fn mp4_frame(
     state: tauri::State<'_, AppState>,
     session_id: String,
     frame_index: u32,
-    image: String
+    image: String,
 ) -> Result<(), String> {
     let sessions = state.mp4_sessions.lock().unwrap();
-    let session_dir = sessions.get(&session_id).ok_or("Invalid or expired session")?;
+    let session_dir = sessions
+        .get(&session_id)
+        .ok_or("Invalid or expired session")?;
 
-    let image_data = if let Some(pos) = image.find(',') { &image[pos + 1..] } else { &image };
+    let image_data = if let Some(pos) = image.find(',') {
+        &image[pos + 1..]
+    } else {
+        &image
+    };
     let bytes = general_purpose::STANDARD
         .decode(image_data)
         .map_err(|e| format!("Decode error: {e}"))?;
@@ -401,7 +418,42 @@ fn mp4_frame(
     Ok(())
 }
 
-/// Encode frames into an MP4 via FFmpeg, writing to `output_path`.
+// ---------------------------------------------------------------------------
+//  Helper: write base64 audio to a temp file inside the session directory.
+//  Shared by both desktop and Android render paths.
+// ---------------------------------------------------------------------------
+fn write_temp_audio(
+    session_dir: &Path,
+    include_audio: bool,
+    audio_data: Option<String>,
+    audio_filename: Option<String>,
+) -> Option<PathBuf> {
+    if !include_audio {
+        return None;
+    }
+    let b64 = audio_data?;
+    let fname = audio_filename?;
+    let ext = Path::new(&fname)
+        .extension()
+        .and_then(|x| x.to_str())
+        .unwrap_or("mp3");
+
+    let temp_audio_path = session_dir.join(format!("track.{}", ext));
+    let clean_data = if let Some(pos) = b64.find(',') {
+        &b64[pos + 1..]
+    } else {
+        &b64
+    };
+
+    let bytes = general_purpose::STANDARD.decode(clean_data).ok()?;
+    fs::write(&temp_audio_path, &bytes).ok()?;
+    Some(temp_audio_path)
+}
+
+// ---------------------------------------------------------------------------
+//  DESKTOP: encode via FFmpeg sidecar  (Windows / macOS / Linux)
+// ---------------------------------------------------------------------------
+#[cfg(not(target_os = "android"))]
 #[tauri::command]
 async fn mp4_render(
     app: tauri::AppHandle,
@@ -409,42 +461,24 @@ async fn mp4_render(
     session_id: String,
     fps: u32,
     include_audio: bool,
-    audio_data: Option<String>, // New parameter
-    audio_filename: Option<String>, // New parameter
+    audio_data: Option<String>,
+    audio_filename: Option<String>,
+    audio_volume: f32, // NEW: Matches audioVolume in JS
     total_frames: u32,
-    output_path: String
+    duration_sec: f64, // NEW: Matches durationSec in JS
+    output_path: String,
 ) -> Result<(), String> {
     let session_dir = {
         let sessions = state.mp4_sessions.lock().unwrap();
-        sessions.get(&session_id).cloned().ok_or("Invalid or expired session")?
+        sessions
+            .get(&session_id)
+            .cloned()
+            .ok_or("Invalid or expired session")?
     };
 
     let fps = fps.max(1);
-    let video_duration = (total_frames as f64) / (fps as f64);
 
-    // Write the incoming base64 audio directly to the temp session directory
-    let audio_file = if include_audio && audio_data.is_some() && audio_filename.is_some() {
-        let b64 = audio_data.unwrap();
-        let fname = audio_filename.unwrap();
-        let ext = Path::new(&fname)
-            .extension()
-            .and_then(|x| x.to_str())
-            .unwrap_or("mp3");
-
-        let temp_audio_path = session_dir.join(format!("track.{}", ext));
-
-        // Strip the data URL prefix if it exists
-        let clean_data = if let Some(pos) = b64.find(',') { &b64[pos + 1..] } else { &b64 };
-
-        // Decode and write to disk for FFmpeg
-        if let Ok(bytes) = general_purpose::STANDARD.decode(clean_data) {
-            if fs::write(&temp_audio_path, &bytes).is_ok() { Some(temp_audio_path) } else { None }
-        } else {
-            None
-        }
-    } else {
-        None
-    };
+    let audio_file = write_temp_audio(&session_dir, include_audio, audio_data, audio_filename);
 
     // Build sidecar argument vector dynamically
     let input_pattern = session_dir.join("frame_%04d.png");
@@ -453,7 +487,7 @@ async fn mp4_render(
         "-framerate".to_string(),
         fps.to_string(),
         "-i".to_string(),
-        input_pattern.to_string_lossy().to_string()
+        input_pattern.to_string_lossy().to_string(),
     ];
 
     if let Some(ref audio) = audio_file {
@@ -461,35 +495,33 @@ async fn mp4_render(
         args.push(audio.to_string_lossy().to_string());
     }
 
-    args.extend(
-        vec![
-            "-c:v".to_string(),
-            "libx264".to_string(),
-            "-pix_fmt".to_string(),
-            "yuv420p".to_string(),
-            "-preset".to_string(),
-            "medium".to_string(),
-            "-crf".to_string(),
-            "18".to_string(),
-            "-vf".to_string(),
-            "pad=ceil(iw/2)*2:ceil(ih/2)*2".to_string()
-        ]
-    );
+    args.extend(vec![
+        "-c:v".to_string(),
+        "libx264".to_string(),
+        "-pix_fmt".to_string(),
+        "yuv420p".to_string(),
+        "-preset".to_string(),
+        "medium".to_string(),
+        "-crf".to_string(),
+        "18".to_string(),
+        "-vf".to_string(),
+        "pad=ceil(iw/2)*2:ceil(ih/2)*2".to_string(),
+    ]);
 
     if audio_file.is_some() {
-        args.extend(
-            vec![
-                "-c:a".to_string(),
-                "aac".to_string(),
-                "-b:a".to_string(),
-                "192k".to_string(),
-                "-shortest".to_string()
-            ]
-        );
+        args.extend(vec![
+            "-c:a".to_string(),
+            "aac".to_string(),
+            "-b:a".to_string(),
+            "192k".to_string(),
+            "-filter:a".to_string(),
+            format!("volume={:.2}", audio_volume), // NEW: Apply volume scale
+        ]);
     }
 
+    // NEW: Force FFmpeg to truncate exactly at our calculated duration
     args.push("-t".to_string());
-    args.push(format!("{video_duration:.4}"));
+    args.push(format!("{duration_sec:.4}"));
     args.push(output_path);
 
     let sidecar = app
@@ -499,8 +531,9 @@ async fn mp4_render(
 
     let output = sidecar
         .args(&args)
-        .output().await
-        .map_err(|e| { format!("Failed to execute FFmpeg sidecar: {}", e) })?;
+        .output()
+        .await
+        .map_err(|e| format!("Failed to execute FFmpeg sidecar: {}", e))?;
 
     cleanup_session(&state.mp4_sessions, &session_id);
 
@@ -517,6 +550,49 @@ async fn mp4_render(
         return Err(format!("FFmpeg encoding failed:\n{tail}"));
     }
 
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+//  ANDROID: encode via MediaCodec plugin
+// ---------------------------------------------------------------------------
+#[cfg(target_os = "android")]
+#[tauri::command]
+async fn mp4_render(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+    session_id: String,
+    fps: u32,
+    include_audio: bool,
+    audio_data: Option<String>,
+    audio_filename: Option<String>,
+    audio_volume: f32, // NEW: Match desktop signature
+    total_frames: u32,
+    duration_sec: f64, // NEW: Match desktop signature
+    output_path: String,
+) -> Result<(), String> {
+    let session_dir = {
+        let sessions = state.mp4_sessions.lock().unwrap();
+        sessions
+            .get(&session_id)
+            .cloned()
+            .ok_or("Invalid or expired session")?
+    };
+
+    let audio_path = write_temp_audio(&session_dir, include_audio, audio_data, audio_filename);
+
+    // Call into the Kotlin MediaCodec encoder via the Tauri plugin bridge.
+    // (Note: If you want to support volume/truncation on Android later, you'll need to pass these new variables into the EncodeRequest struct).
+    let encoder = app.state::<mp4_plugin::Mp4Encoder<tauri::Wry>>();
+    encoder.encode(mp4_plugin::EncodeRequest {
+        input_dir: session_dir.to_string_lossy().to_string(),
+        output_path,
+        fps: fps.max(1),
+        total_frames,
+        audio_path: audio_path.map(|p| p.to_string_lossy().to_string()),
+    })?;
+
+    cleanup_session(&state.mp4_sessions, &session_id);
     Ok(())
 }
 
@@ -542,40 +618,58 @@ fn get_data_dir(app: tauri::AppHandle) -> String {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder
-        ::default()
-        .plugin(tauri_plugin_shell::init())
+    let mut builder = tauri::Builder::default();
+
+    // Shell plugin is only needed on desktop (for the FFmpeg sidecar).
+    #[cfg(not(target_os = "android"))]
+    {
+        builder = builder.plugin(tauri_plugin_shell::init());
+    }
+
+    builder
         .plugin(tauri_plugin_dialog::init())
+        // ── Android MediaCodec plugin ──────────────────────────────
+        .plugin(
+            tauri::plugin::Builder::new("mp4-encoder")
+                .setup(|app, _api: tauri::plugin::PluginApi<tauri::Wry, ()>| {
+                    #[cfg(target_os = "android")]
+                    {
+                        let handle = _api
+                            .register_android_plugin("com.cinemint.pompedin", "Mp4EncoderPlugin")?;
+                        app.manage(mp4_plugin::Mp4Encoder(handle));
+                    }
+                    Ok(())
+                })
+                .build(),
+        )
         .manage(AppState {
             mp4_sessions: Mutex::new(HashMap::new()),
         })
-        .invoke_handler(
-            tauri::generate_handler![
-                list_brushes,
-                get_brush_data,
-                open_brush_folder,
-                save_audio,
-                get_current_audio,
-                remove_audio,
-                export_png,
-                read_image_file,
-                read_file_base64,
-                save_project,
-                save_project_to_path,
-                load_project,
-                load_project_from_path,
-                list_projects,
-                get_projects_dir,
-                mp4_start,
-                mp4_frame,
-                mp4_render,
-                get_data_dir
-            ]
-        )
+        .invoke_handler(tauri::generate_handler![
+            list_brushes,
+            get_brush_data,
+            open_brush_folder,
+            save_audio,
+            get_current_audio,
+            remove_audio,
+            export_png,
+            read_image_file,
+            read_file_base64,
+            save_project,
+            save_project_to_path,
+            load_project,
+            load_project_from_path,
+            list_projects,
+            get_projects_dir,
+            mp4_start,
+            mp4_frame,
+            mp4_render,
+            get_data_dir
+        ])
         .setup(|app| {
             ensure_dirs(app.handle());
             Ok(())
         })
         .run(tauri::generate_context!())
-        .expect("error while running VectorFrame");
+        .expect("error while running Pompedin");
 }

@@ -14,48 +14,134 @@
         VF.selSegments = [];
         VF.clearHandles();
         S.tl.frame = Math.max(0, Math.min(f, S.tl.max - 1));
-        VF.render(); VF.uiTimeline();
 
+        VF.render();
+        VF.updateTimelineState();
+
+        // Only trigger the short scrubbing snippet if the timeline is paused
         if (!S.tl.playing && window.VF.playFrameAudio) {
             VF.playFrameAudio(S.tl.frame);
         }
     };
 
-    var playInt = null;
+    var playReqId = null;
+    var animStartTime = 0;
+
     VF.togglePlay = function () {
         if (S.tl.playing) {
-            clearInterval(playInt); S.tl.playing = false;
+            // Pause playback
+            cancelAnimationFrame(playReqId);
+            S.tl.playing = false;
             $('#btn-play').text('▶');
             if (window.VF.stopAudio) VF.stopAudio();
         } else {
-            S.tl.playing = true; $('#btn-play').text('⏸');
+            // Start playback
+            S.tl.playing = true;
+            $('#btn-play').text('⏸');
+
+            var fps = S.tl.fps;
+            var maxFrames = S.tl.max;
+            var A = VF.audio || {};
+
+            // Kick off audio and reset our hardware clocks
             if (window.VF.startAudioPlayback) VF.startAudioPlayback(S.tl.frame);
+            animStartTime = performance.now() - (S.tl.frame * (1000 / fps));
 
-            playInt = setInterval(function () {
-                var n = S.tl.frame + 1;
-                if (n >= S.tl.max) {
-                    n = 0;
-                    if (window.VF.startAudioPlayback) VF.startAudioPlayback(0);
+            function loop() {
+                if (!S.tl.playing) return;
+
+                var expectedFrame = 0;
+
+                // Sync to hardware AudioContext clock if playing, else high-res performance timer
+                if (A.buffer && A.isPlaying && A.ctx) {
+                    var elapsedSec = A.ctx.currentTime - A.startTime + A.startOffset;
+                    expectedFrame = Math.floor(elapsedSec * fps);
+                } else {
+                    var elapsedMs = performance.now() - animStartTime;
+                    expectedFrame = Math.floor(elapsedMs / (1000 / fps));
                 }
-                VF.goFrame(n);
 
-                var nextN = n + 1 >= S.tl.max ? 0 : n + 1;
-                requestIdleCallback(function () {
-                    S.layers.forEach(function (layer) {
-                        if (layer.id !== S.activeId && layer.type === 'vector' && layer.vis) {
-                            var res = VF.getResolvedFrame(layer, nextN);
-                            if (res && (!layer.cache || !layer.cache[res.keyFrame])) {
-                                VF.loadFrame(layer.id, nextN);
+                // Handle looping logic
+                if (expectedFrame >= maxFrames) {
+                    expectedFrame = 0;
+                    if (A.buffer && A.isPlaying && window.VF.startAudioPlayback) {
+                        // Restart audio, which inherently resets A.startTime for the next loop
+                        VF.startAudioPlayback(0);
+                    } else {
+                        // Reset the fallback timer
+                        animStartTime = performance.now();
+                    }
+                }
+
+                // Only render if the clock has crossed into a new frame boundary
+                if (expectedFrame !== S.tl.frame) {
+                    VF.goFrame(expectedFrame);
+
+                    // Idle cache the upcoming frame
+                    var nextN = expectedFrame + 1 >= maxFrames ? 0 : expectedFrame + 1;
+                    requestIdleCallback(function () {
+                        S.layers.forEach(function (layer) {
+                            if (layer.id !== S.activeId && layer.type === 'vector' && layer.vis) {
+                                var res = VF.getResolvedFrame(layer, nextN);
+                                if (res && (!layer.cache || !layer.cache[res.keyFrame])) {
+                                    VF.loadFrame(layer.id, nextN);
+                                }
                             }
-                        }
+                        });
                     });
-                });
-            }, 1000 / S.tl.fps);
+                }
+
+                // Call the next browser repaint
+                playReqId = requestAnimationFrame(loop);
+            }
+
+            playReqId = requestAnimationFrame(loop);
         }
     };
 
     VF.uiPlayhead = function () {
-        $('#tl-playhead').css('left', (S.tl.frame * 18 + 9) + 'px');
+        var cellW = 18;
+        var playheadX = S.tl.frame * cellW;
+
+        // Move the visual yellow line
+        $('#tl-playhead').css('left', (playheadX + 9) + 'px');
+
+        // Auto-scroll the timeline container to follow the playhead
+        var $scroll = $('#tl-scroll');
+        if ($scroll.length === 0) return;
+
+        var scrollLeft = $scroll.scrollLeft();
+        var viewWidth = $scroll.width();
+
+        // If playhead goes past the right edge...
+        if (playheadX + cellW > scrollLeft + viewWidth) {
+            // Page the timeline forward, leaving a 2-frame buffer on the left
+            $scroll.scrollLeft(playheadX - (cellW * 2));
+        }
+        // If playhead jumps back past the left edge (e.g., when the animation loops back to 0)
+        else if (playheadX < scrollLeft) {
+            $scroll.scrollLeft(Math.max(0, playheadX - (cellW * 2)));
+        }
+    };
+
+    VF.updateTimelineState = function () {
+        // Move the yellow playhead line
+        VF.uiPlayhead();
+
+        // Update the UI text counter
+        VF.uiFrameDisp();
+
+        // Move the blue highlight class to the correct column of cells
+        $('.tl-cell.cur').removeClass('cur');
+        $('.tl-cell[data-f="' + S.tl.frame + '"]').addClass('cur');
+
+        // Manage the hardware-accelerated audio waveform highlight
+        var $audioHi = $('#audio-cur-highlight');
+        if ($audioHi.length === 0) {
+            $audioHi = $('<div id="audio-cur-highlight" style="position: absolute; top: 0; bottom: 0; width: 18px; background: rgba(74, 111, 255, 0.25); pointer-events: none; z-index: 5;"></div>');
+            $('#tl-audio-row').append($audioHi);
+        }
+        $audioHi.css('left', (S.tl.frame * 18) + 'px');
     };
 
     VF.uiTimeline = function () {
@@ -75,8 +161,13 @@
 
         var TAG_COLORS = VF.TAG_COLORS || {};
         var lh = '';
-        if (VF.buildCameraTimelineLabel) lh += VF.buildCameraTimelineLabel();
+
+        // NEW: Inject a 16px spacer to perfectly mirror the timeline ruler on the right
+        lh += '<div style="height: 16px; position: sticky; top: 0; background: var(--bg-panel); z-index: 11; border-bottom: 1px solid var(--border);"></div>';
+
+        // Audio goes first to match #tl-audio-row sitting above #tl-rows
         lh += '<div class="tl-audio-label"><i class="fa-solid fa-music"></i> Audio</div>';
+        if (VF.buildCameraTimelineLabel) lh += VF.buildCameraTimelineLabel();
 
         [].concat(S.layers).sort(function (a, b) { return b.z - a.z; }).forEach(function (l) {
             var icon = l.type === 'image' ? '🖼 ' : '';
@@ -132,6 +223,21 @@
         VF.uiPlayhead();
 
         if (VF.renderAudioWaveform) VF.renderAudioWaveform();
+
+        // Calculate and apply the scroll offset
+        VF.syncTimelineScrollbar();
+    };
+
+    // Dynamically pad the left labels so its scroll limit perfectly matches the right grid
+    VF.syncTimelineScrollbar = function () {
+        var scrollEl = document.getElementById('tl-scroll');
+        if (!scrollEl) return;
+
+        // Calculate if the horizontal scrollbar is present, and how tall it is
+        var hScrollHeight = scrollEl.offsetHeight - scrollEl.clientHeight;
+
+        // Apply it as bottom padding to the labels container
+        $('#tl-labels').css('padding-bottom', hScrollHeight + 'px');
     };
 
     var ctxL = null, ctxF = null, ctxType = null;
@@ -258,15 +364,18 @@
 
         $tlRows.on('contextmenu', '.tl-cell', function (e) {
             e.preventDefault(); e.stopPropagation();
+            var cellL = $(this).data('l');
+            if (cellL === '__camera') return; // Handled by camera's own context menu
             S.tl.frame = +$(this).data('f');
             VF.render(); VF.uiPlayhead();
-            showCtx(e.clientX, e.clientY, +$(this).data('l'), +$(this).data('f'), $(this).data('type'));
+            showCtx(e.clientX, e.clientY, +cellL, +$(this).data('f'), $(this).data('type'));
         });
 
         $(document).on('click', function () { $dotCtx.hide(); });
 
         $dotCtx.on('click', '.ctx-i', function () {
             var act = $(this).data('act');
+            if (ctxL === '__camera') { $dotCtx.hide(); return; }
             var layer = S.layers.find(function (x) { return x.id === ctxL; });
             if (!layer) return;
 
@@ -719,6 +828,25 @@
             tlDrag = null;
         });
 
+        // ── SYNC TIMELINE LABELS & ROWS ──
+        var $tlLabels = $('#tl-labels');
+        var $tlScroll = $('#tl-scroll');
+
+        // Sync vertical scrolling so the rows and labels never decouple
+        $tlScroll.on('scroll', function () {
+            $tlLabels.scrollTop($(this).scrollTop());
+        });
+
+        // Allow scrolling the timeline when hovering over the label area
+        $tlLabels.on('wheel', function (e) {
+            var currentScroll = $tlScroll.scrollTop();
+            $tlScroll.scrollTop(currentScroll + e.originalEvent.deltaY);
+            e.preventDefault();
+        });
+
+        $(window).on('resize', function () {
+            if (VF.syncTimelineScrollbar) VF.syncTimelineScrollbar();
+        });
     });
 
 })();

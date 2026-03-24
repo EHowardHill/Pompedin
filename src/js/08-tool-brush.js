@@ -78,14 +78,25 @@
             var ptsCopy = pressurePoints.map(function (p) {
                 return { point: p.point.clone(), angle: p.angle, width: p.width };
             });
+
             texPreview = VF.renderPressureTextureRibbon(
-                ptsCopy, S.cfg.tex, texCol, S.cfg.brushSize, strokeSeed
+                ptsCopy,
+                S.cfg.tex,
+                texCol,
+                S.cfg.brushSize,
+                {
+                    seed: strokeSeed,
+                    rot: S.cfg.brushRotation,
+                    angJit: S.cfg.brushAngleJitter,
+                    posJit: S.cfg.brushPosJitter
+                }
             );
+
             if (texPreview) {
                 pl.addChild(texPreview);
-                if (pressureGuidePath) pressureGuidePath.visible = false;
+                if (pressureGuidePath) pressureGuidePath.visible = S.cfg.showBrushGuide; // <-- Change to dynamic check
             } else if (pressureGuidePath) {
-                pressureGuidePath.visible = true;
+                pressureGuidePath.visible = true; // Always true if preview isn't ready
             }
         } else {
             if (!curPath || curPath.length < 0.5) return;
@@ -104,18 +115,25 @@
 
             var clonePath = curPath.clone({ insert: false });
             clonePath.simplify(VF.smoothTol());
+
             texPreview = VF.renderTextureRibbon(
                 clonePath,
                 curPath.data._pendingTex,
                 texCol,
                 S.cfg.brushSize,
-                { seed: strokeSeed }
+                {
+                    seed: strokeSeed,
+                    rot: S.cfg.brushRotation,
+                    angJit: S.cfg.brushAngleJitter,
+                    posJit: S.cfg.brushPosJitter
+                }
             );
+
             if (texPreview) {
                 pl.addChild(texPreview);
-                curPath.visible = false;
+                curPath.visible = S.cfg.showBrushGuide; // <-- Change to dynamic check
             } else {
-                curPath.visible = true;
+                curPath.visible = true; // Always true if preview isn't ready
             }
         }
     }
@@ -163,7 +181,7 @@
             if (usingTex) {
                 pressureGuidePath = new P.Path({
                     strokeColor: col,
-                    strokeWidth: 1,
+                    strokeWidth: 2, // Thicker center-line guide
                     opacity: 0.35,
                     strokeCap: 'round'
                 });
@@ -187,7 +205,7 @@
                 fillColor: S.cfg.autoFill ? S.cfg.fillCol : null,
             });
             if (usingTex) {
-                curPath.opacity = 0.3;
+                curPath.opacity = 0.25;
                 curPath.data._pendingTex = S.cfg.tex;
                 curPath.data._pendingCol = strokeCol;
             }
@@ -243,7 +261,7 @@
 
             if (usingTex) {
                 var now2 = Date.now();
-                if (now2 - lastTexPreviewTime >= TEX_PREVIEW_INTERVAL) {
+                if (now2 - lastTexPreviewTime >= getTexPreviewInterval()) {
                     lastTexPreviewTime = now2;
                     renderTexPreview();
                 }
@@ -309,8 +327,18 @@
                 }
 
                 var texGroup = VF.renderPressureTextureRibbon(
-                    pressurePoints, S.cfg.tex, texCol, S.cfg.brushSize, strokeSeed
+                    pressurePoints,
+                    S.cfg.tex,
+                    texCol,
+                    S.cfg.brushSize,
+                    {
+                        seed: strokeSeed,
+                        rot: S.cfg.brushRotation,
+                        angJit: S.cfg.brushAngleJitter,
+                        posJit: S.cfg.brushPosJitter
+                    }
                 );
+
                 if (texGroup && pl) { pl.addChild(texGroup); committed.push(texGroup); }
             } else {
                 committed.push(pressureGroup);
@@ -351,9 +379,18 @@
                 }
 
                 var texGroup2 = VF.renderTextureRibbon(
-                    curPath, texName, texCol2, S.cfg.brushSize,
-                    { seed: strokeSeed }
+                    curPath,
+                    texName,
+                    texCol2,
+                    S.cfg.brushSize,
+                    {
+                        seed: strokeSeed,
+                        rot: S.cfg.brushRotation,
+                        angJit: S.cfg.brushAngleJitter,
+                        posJit: S.cfg.brushPosJitter
+                    }
                 );
+
                 if (texGroup2 && pl) {
                     pl.addChild(texGroup2);
                     committed.push(texGroup2);

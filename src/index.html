@@ -5,22 +5,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pompedin</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.12.17/paper-full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="lib/paper-full.min.js"></script>
+    <script src="lib/jquery.min.js"></script>
+    <link href="lib/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="lib/fontawesome/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="style-layer-settings.css">
     <link rel="stylesheet" href="style-about.css">
 </head>
 
 <body>
-
     <div id="app">
 
         <div id="top-bar">
             <div class="ribbon-tabs">
                 <div class="ribbon-tab active" data-tab="tab-home">Home</div>
+                <div class="ribbon-tab" data-tab="tab-brush">Brush</div>
                 <div class="ribbon-tab" data-tab="tab-tools">Tools</div>
                 <div class="ribbon-tab" data-tab="tab-project">Project</div>
                 <div class="ribbon-tab" data-tab="tab-workspace">Workspace</div>
@@ -58,34 +59,6 @@
 
                     <div class="div-v-ribbon"></div>
 
-                    <div class="ribbon-group" style="opacity:0.8;">
-                        <div class="ribbon-row">
-                            <span style="font-size:10px;color:var(--text-dim);width:48px">Smooth</span>
-                            <input type="range" id="rng-smooth" min="1" max="5" value="3" style="width:50px">
-                            <input type="number" id="v-smooth" class="sm-in" min="1" max="5" value="3"
-                                style="width:34px;margin-left:4px">
-                        </div>
-                        <div class="ribbon-row" style="height: 28px;">
-                            <span style="font-size:10px;color:var(--text-dim);width:48px">Pressure</span>
-                            <div class="tgl" id="tgl-pressure" data-tip="Tablet Pressure"></div>
-                        </div>
-                        <div class="ribbon-group-label" style="color:var(--accent);opacity:0.6;">New Stroke Only</div>
-                    </div>
-
-                    <div class="div-v-ribbon"></div>
-
-                    <div class="ribbon-group">
-                        <div class="ribbon-row">
-                            <span style="font-size:10px;color:var(--text-dim);width:40px">Size</span>
-                            <input type="range" id="rng-brush" min="1" max="60" value="4" style="width:70px">
-                            <input type="number" id="v-brush" class="sm-in" min="1" max="60" value="4"
-                                style="width:34px;margin-left:4px">
-                        </div>
-                        <div class="ribbon-group-label">Stroke Width</div>
-                    </div>
-
-                    <div class="div-v-ribbon"></div>
-
                     <div class="ribbon-group">
                         <div class="ribbon-row">
                             <span style="font-size:10px;color:var(--text-dim);width:36px">Stroke</span>
@@ -102,27 +75,6 @@
                                 data-tip="Pick Color (Screen)"><i class="fa-solid fa-eye-dropper"></i></button>
                         </div>
                         <div class="ribbon-group-label">Colors & Style</div>
-                    </div>
-
-                    <div class="div-v-ribbon"></div>
-
-                    <div class="ribbon-group">
-                        <div class="ribbon-row" style="align-items: center;">
-                            <select id="sel-tex"
-                                style="background:var(--bg-dark);border:1px solid var(--border);color:var(--text-primary);font-size:11px;padding:4px 6px;border-radius:4px;width:140px;outline:none;cursor:pointer;">
-                                <option value="none">N/A</option>
-                            </select>
-                            <button class="tb" id="btn-refresh-brushes"
-                                style="width:24px;height:24px;font-size:11px;margin-left:2px"
-                                data-tip="Refresh brush list"><i class="fa-solid fa-arrows-rotate"></i></button>
-                        </div>
-                        <div class="ribbon-row">
-                            <button class="tb tb-wide" id="btn-open-brush-folder" style="font-size:10px"
-                                data-tip="Open brush folder in file explorer">
-                                <i class="fa-solid fa-folder-open" style="margin-right:3px"></i> Open Folder
-                            </button>
-                        </div>
-                        <div class="ribbon-group-label">Texture</div>
                     </div>
 
                     <div class="div-v-ribbon"></div>
@@ -154,12 +106,121 @@
                     </div>
                 </div>
 
-                <!-- ═══════════════════════════════════════════
-                     TAB: TOOLS  (modified: onion width, symmetry sliders, guide opacity)
-                     ═══════════════════════════════════════════ -->
+                <div id="tab-brush" class="ribbon-panel">
+
+                    <div class="ribbon-group" style="opacity:0.8;">
+                        <div class="ribbon-row">
+                            <span style="font-size:10px;color:var(--text-dim);width:48px">Smooth</span>
+                            <input type="range" id="rng-smooth" min="1" max="5" value="3" style="width:50px">
+                            <input type="number" id="v-smooth" class="sm-in" min="1" max="5" value="3"
+                                style="width:34px;margin-left:4px">
+                        </div>
+                        <div class="ribbon-row" style="height: 28px;">
+                            <span style="font-size:10px;color:var(--text-dim);width:48px">Pressure</span>
+                            <div class="tgl" id="tgl-pressure" data-tip="Tablet Pressure"></div>
+                        </div>
+                        <div class="ribbon-group-label" style="color:var(--accent);opacity:0.6;">New Stroke Only</div>
+                    </div>
+
+                    <div class="div-v-ribbon"></div>
+
+                    <div class="ribbon-group">
+                        <div class="ribbon-row">
+                            <span style="font-size:10px;color:var(--text-dim);width:40px">Size</span>
+                            <input type="range" id="rng-brush" min="1" max="60" value="4" style="width:70px">
+                            <input type="number" id="v-brush" class="sm-in" min="1" max="60" value="4"
+                                style="width:34px;margin-left:4px">
+                        </div>
+                        <div class="ribbon-row">
+                            <span style="font-size:10px;color:var(--text-dim);width:40px">Spacing</span>
+                            <input type="range" id="rng-spacing" min="5" max="200" value="50" style="width:70px">
+                            <input type="number" id="v-spacing" class="sm-in" min="5" max="200" value="50"
+                                style="width:34px;margin-left:4px">
+                        </div>
+                        <div class="ribbon-row" style="height: 26px;">
+                            <span style="font-size:10px;color:var(--text-dim);width:40px">Guide</span>
+                            <div class="tgl on" id="tgl-brush-guide"
+                                data-tip="Show solid path beneath texture while drawing"></div>
+                        </div>
+                        <div class="ribbon-group-label">Brush Settings</div>
+                    </div>
+
+                    <div class="div-v-ribbon"></div>
+
+                    <div class="ribbon-group">
+                        <div class="ribbon-row">
+                            <span style="font-size:10px;color:var(--text-dim);width:36px">Angle</span>
+                            <input type="range" id="rng-rot" min="-180" max="180" value="0" style="width:50px">
+                            <input type="number" id="v-rot" class="sm-in" min="-180" max="180" value="0"
+                                style="width:34px;margin-left:4px">
+                        </div>
+                        <div class="ribbon-row">
+                            <span style="font-size:10px;color:var(--text-dim);width:36px">Rot Jit</span>
+                            <input type="range" id="rng-angjit" min="0" max="100" value="100" style="width:50px">
+                            <input type="number" id="v-angjit" class="sm-in" min="0" max="100" value="100"
+                                style="width:34px;margin-left:4px">
+                        </div>
+                        <div class="ribbon-row">
+                            <span style="font-size:10px;color:var(--text-dim);width:36px">Pos Jit</span>
+                            <input type="range" id="rng-posjit" min="0" max="200" value="0" style="width:50px">
+                            <input type="number" id="v-posjit" class="sm-in" min="0" max="200" value="0"
+                                style="width:34px;margin-left:4px">
+                        </div>
+                        <div class="ribbon-group-label">Brush Dynamics</div>
+                    </div>
+
+                    <div class="div-v-ribbon"></div>
+
+                    <div class="ribbon-group">
+                        <div class="ribbon-row" style="align-items: center;">
+                            <select id="sel-tex"
+                                style="background:var(--bg-dark);border:1px solid var(--border);color:var(--text-primary);font-size:11px;padding:4px 6px;border-radius:4px;width:140px;outline:none;cursor:pointer;">
+                                <option value="none">N/A</option>
+                            </select>
+                            <button class="tb" id="btn-refresh-brushes"
+                                style="width:24px;height:24px;font-size:11px;margin-left:2px"
+                                data-tip="Refresh brush list"><i class="fa-solid fa-arrows-rotate"></i></button>
+                        </div>
+                        <div class="ribbon-row">
+                            <button class="tb tb-wide" id="btn-open-brush-folder" style="font-size:10px"
+                                data-tip="Open brush folder in file explorer">
+                                <i class="fa-solid fa-folder-open" style="margin-right:3px"></i> Open Folder
+                            </button>
+                        </div>
+                        <div class="ribbon-group-label">Brush Texture</div>
+                    </div>
+
+                    <div class="div-v-ribbon"></div>
+
+                    <div class="ribbon-group" style="min-width:440px;">
+                        <div style="display:flex;gap:8px;height:100%;">
+                            <div
+                                style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;justify-content:center;min-width:120px;">
+                                <div class="ribbon-row" style="height:26px;">
+                                    <span style="font-size:10px;color:var(--text-dim);width:36px">Onion</span>
+                                    <div class="tgl" id="tgl-onion"></div>
+                                </div>
+                                <div class="ribbon-row" style="height:22px;">
+                                    <label
+                                        style="font-size:10px;color:var(--text-dim);display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap">
+                                        <input type="checkbox" id="chk-onion-isolate" style="margin:0"> Isolate Layer
+                                    </label>
+                                </div>
+                                <div class="ribbon-row" style="height:22px;">
+                                    <button class="tb tb-wide" id="btn-add-onion"
+                                        style="font-size:10px;height:22px;padding:0 8px;color:var(--accent)">+ Add
+                                        Rule</button>
+                                </div>
+                            </div>
+                            <div id="onion-ribbon-list" class="onion-ribbon-list"></div>
+                        </div>
+                        <div class="ribbon-group-label">Onion Skin</div>
+                    </div>
+
+                </div>
+
                 <div id="tab-tools" class="ribbon-panel">
 
-                    <!-- ══════════ CAMERA ══════════ -->
                     <div class="ribbon-group" style="min-width:220px;">
                         <div class="ribbon-row">
                             <span style="font-size:10px;color:var(--text-dim);width:16px">X</span>
@@ -194,35 +255,6 @@
 
                     <div class="div-v-ribbon"></div>
 
-                    <!-- ══════════ ONION SKIN — wider left column ══════════ -->
-                    <div class="ribbon-group" style="min-width:440px;">
-                        <div style="display:flex;gap:8px;height:100%;">
-                            <div
-                                style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;justify-content:center;min-width:120px;">
-                                <div class="ribbon-row" style="height:26px;">
-                                    <span style="font-size:10px;color:var(--text-dim);width:36px">Onion</span>
-                                    <div class="tgl" id="tgl-onion"></div>
-                                </div>
-                                <div class="ribbon-row" style="height:22px;">
-                                    <label
-                                        style="font-size:10px;color:var(--text-dim);display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap">
-                                        <input type="checkbox" id="chk-onion-isolate" style="margin:0"> Isolate Layer
-                                    </label>
-                                </div>
-                                <div class="ribbon-row" style="height:22px;">
-                                    <button class="tb tb-wide" id="btn-add-onion"
-                                        style="font-size:10px;height:22px;padding:0 8px;color:var(--accent)">+ Add
-                                        Rule</button>
-                                </div>
-                            </div>
-                            <div id="onion-ribbon-list" class="onion-ribbon-list"></div>
-                        </div>
-                        <div class="ribbon-group-label">Onion Skin</div>
-                    </div>
-
-                    <div class="div-v-ribbon"></div>
-
-                    <!-- ══════════ SYMMETRY — with axis position sliders ══════════ -->
                     <div class="ribbon-group">
                         <div class="ribbon-row" style="height:26px;">
                             <span style="font-size:10px;color:var(--text-dim);width:36px">Sym H</span>
@@ -249,7 +281,6 @@
 
                     <div class="div-v-ribbon"></div>
 
-                    <!-- ══════════ PATH UTILITIES ══════════ -->
                     <div class="ribbon-group">
                         <div class="ribbon-row">
                             <button class="tb tb-wide" id="btn-path-simplify"
@@ -263,20 +294,16 @@
                             </button>
                         </div>
                         <div class="ribbon-row">
-                            <button class="tb tb-wide" id="btn-path-close" data-tip="Close open path endpoints">
-                                Close
-                            </button>
+                            <button class="tb tb-wide" id="btn-path-close"
+                                data-tip="Close open path endpoints">Close</button>
                             <button class="tb tb-wide" id="btn-path-reverse" data-tip="Reverse winding direction"
-                                style="margin-left:4px">
-                                Reverse
-                            </button>
+                                style="margin-left:4px">Reverse</button>
                         </div>
                         <div class="ribbon-group-label">Path Tools</div>
                     </div>
 
                     <div class="div-v-ribbon"></div>
 
-                    <!-- ══════════ BOOLEAN OPS ══════════ -->
                     <div class="ribbon-group">
                         <div class="ribbon-row">
                             <button class="tb tb-wide" id="btn-bool-unite" data-tip="Combine 2 closed paths (Union)">
@@ -289,20 +316,16 @@
                             </button>
                         </div>
                         <div class="ribbon-row">
-                            <button class="tb tb-wide" id="btn-bool-intersect" data-tip="Keep overlapping area only">
-                                Intersect
-                            </button>
+                            <button class="tb tb-wide" id="btn-bool-intersect"
+                                data-tip="Keep overlapping area only">Intersect</button>
                             <button class="tb tb-wide" id="btn-bool-exclude" data-tip="Keep non-overlapping areas"
-                                style="margin-left:4px">
-                                Exclude
-                            </button>
+                                style="margin-left:4px">Exclude</button>
                         </div>
                         <div class="ribbon-group-label">Boolean Ops</div>
                     </div>
 
                     <div class="div-v-ribbon"></div>
 
-                    <!-- ══════════ SELECTION OPS ══════════ -->
                     <div class="ribbon-group">
                         <div class="ribbon-row">
                             <button class="tb tb-wide" id="btn-flip-h" data-tip="Flip selection horizontally">
@@ -328,24 +351,17 @@
                                 <option value="bottom">Bottom</option>
                             </select>
                             <button class="tb tb-wide" id="btn-align" data-tip="Align selected items"
-                                style="margin-left:4px;height:22px;font-size:10px">
-                                Align
-                            </button>
+                                style="margin-left:4px;height:22px;font-size:10px">Align</button>
                             <button class="tb tb-wide" id="btn-dist-h" data-tip="Distribute horizontally"
-                                style="margin-left:4px;height:22px;font-size:10px">
-                                D·H
-                            </button>
+                                style="margin-left:4px;height:22px;font-size:10px">D·H</button>
                             <button class="tb tb-wide" id="btn-dist-v" data-tip="Distribute vertically"
-                                style="margin-left:2px;height:22px;font-size:10px">
-                                D·V
-                            </button>
+                                style="margin-left:2px;height:22px;font-size:10px">D·V</button>
                         </div>
                         <div class="ribbon-group-label">Selection</div>
                     </div>
 
                     <div class="div-v-ribbon"></div>
 
-                    <!-- ══════════ CANVAS GUIDES — with opacity slider ══════════ -->
                     <div class="ribbon-group">
                         <div class="ribbon-row" style="height:26px;">
                             <span style="font-size:10px;color:var(--text-dim);width:26px">Grid</span>
@@ -935,8 +951,8 @@
 
                     <h2 id="help-tools">2. Drawing Tools</h2>
                     <ul>
-                        <li><b>Brush (B):</b> Draws vector strokes. Enable "Pressure" to map pen pressure to stroke
-                            width. Enable "Texture" to apply bitmap textures along the vector path.</li>
+                        <li><b>Brush (B):</b> Draws vector strokes. Use the <b>Brush</b> tab to adjust size, smoothing,
+                            map pen pressure, or apply bitmap textures along the vector path.</li>
                         <li><b>Eraser (E):</b> Removes entire paths or segments that fall under the cursor.</li>
                         <li><b>Fill (G):</b> Click inside a closed shape to fill it. Toggle "Fill" and "Stroke" in the
                             ribbon to control what gets applied.</li>
@@ -961,7 +977,7 @@
                         <li><b>Blank Key (F6):</b> Inserts an empty keyframe at the playhead.</li>
                         <li><b>Duplicate Key (F7):</b> Copies the current frame's artwork into a new keyframe so you can
                             modify it.</li>
-                        <li><b>Onion Skin:</b> Toggle Onion Skinning in the Tools tab to see faded versions of
+                        <li><b>Onion Skin:</b> Toggle Onion Skinning in the <b>Brush</b> tab to see faded versions of
                             previous/next frames. Click "+ Add Rule" to configure custom intervals.</li>
                         <li><b>Right-Click Menu:</b> Right-click any cell on the timeline to Copy, Paste, Insert, or
                             Delete frames.</li>
@@ -1022,6 +1038,19 @@
                 <button class="btn" id="btn-close-nosave"
                     style="color:var(--warning); border-color:rgba(218,42,0,0.3);">Close Without Saving</button>
                 <button class="btn btn-p" id="btn-close-save">Save & Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-export" class="mo-ov" style="display:none; z-index: 10000;">
+        <div class="mo-box" style="min-width: 340px; text-align: center;">
+            <div class="mo-title" style="margin-bottom: 16px;">Exporting Video</div>
+            <div
+                style="width: 100%; height: 8px; background: var(--bg-dark); border-radius: 4px; overflow: hidden; margin-bottom: 12px; border: 1px solid var(--border);">
+                <div id="export-progress-bar"
+                    style="width: 0%; height: 100%; background: var(--accent); transition: width 0.1s linear;"></div>
+            </div>
+            <div id="export-status-text" style="font-size: 11px; color: var(--text-secondary);">Preparing export...
             </div>
         </div>
     </div>

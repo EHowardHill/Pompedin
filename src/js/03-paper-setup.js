@@ -36,6 +36,7 @@
     VF.onionLayerFg = onionLayerFg;
     VF.fxLayer = fxLayer;
     VF.fgLayer = fgLayer;
+    VF.viewRotation = 0;
 
     // GENERATE STATIC NOISE CANVAS
     var noiseSize = 1024; // Increased base size for crispness

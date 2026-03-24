@@ -108,8 +108,10 @@ body {
 }
 
 ::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+    width: 10px;
+    /* Vertical scrollbar width */
+    height: 10px;
+    /* Horizontal scrollbar height (Timeline & Ribbon) */
 }
 
 ::-webkit-scrollbar-track {
@@ -117,8 +119,14 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--bg-active);
-    border-radius: 3px;
+    background: var(--text-dim);
+    border-radius: 5px;
+    border: 2px solid var(--bg-dark); 
+    background-clip: padding-box; /* Required for the border-padding trick to work */
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
 }
 
 /* ═══════════════════════════════════════════════════
@@ -221,26 +229,6 @@ body {
 
 .ribbon-panel.active {
     display: flex;
-}
-
-/* Tasteful, inset scrollbar specifically for the ribbon */
-.ribbon-panel::-webkit-scrollbar {
-    height: 6px;
-}
-
-.ribbon-panel::-webkit-scrollbar-track {
-    background: transparent;
-    border-top: 1px solid var(--grid-line);
-}
-
-.ribbon-panel::-webkit-scrollbar-thumb {
-    background: var(--text-dim);
-    border-radius: 3px;
-    border: 1px solid var(--bg-panel);
-}
-
-.ribbon-panel::-webkit-scrollbar-thumb:hover {
-    background: var(--text-secondary);
 }
 
 .ribbon-row {
@@ -533,6 +521,25 @@ input[type="range"]::-webkit-slider-thumb {
     color: var(--accent);
 }
 
+/* Drag and Drop Indicators for Layers */
+.layer-item[draggable="true"] {
+    cursor: grab;
+}
+
+.layer-item[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+.layer-item.drag-top {
+    border-top: 2px solid var(--accent);
+    padding-top: 2px;
+}
+
+.layer-item.drag-bot {
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 2px;
+}
+
 .vbtn {
     width: 18px;
     height: 18px;
@@ -574,12 +581,13 @@ input[type="range"]::-webkit-slider-thumb {
     width: 130px;
     flex-shrink: 0;
     border-right: 1px solid var(--border);
-    overflow-y: auto;
-    padding-top: 16px;
+    overflow-y: hidden;
 }
 
 #tl-scroll {
     flex: 1;
+    min-width: 0;  /* Forces Flexbox to allow shrinking, triggering the X scrollbar */
+    min-height: 0; /* Prevents vertical blowout */
     overflow-x: auto;
     overflow-y: auto;
     position: relative;
@@ -662,7 +670,8 @@ input[type="range"]::-webkit-slider-thumb {
     position: sticky;
     top: 0;
     background: var(--bg-panel);
-    z-index: 2;
+    z-index: 4;
+    /* Highest z-index so nothing slides over it */
 }
 
 .tl-rc {
@@ -980,7 +989,11 @@ input[type="range"]::-webkit-slider-thumb {
    ═══════════════════════════════════════════════════ */
 .tl-audio-row {
     height: 24px;
-    position: relative;
+    position: sticky;
+    top: 16px;
+    /* Pins directly underneath the 16px ruler */
+    z-index: 3;
+    /* Stays beneath the ruler, but above the scrolling layers */
     border-bottom: 1px solid var(--border);
     overflow: hidden;
     background: var(--bg-dark);
@@ -992,7 +1005,6 @@ input[type="range"]::-webkit-slider-thumb {
     image-rendering: auto;
 }
 
-/* Audio label in timeline sidebar */
 .tl-audio-label {
     height: 24px;
     display: flex;
@@ -1006,6 +1018,9 @@ input[type="range"]::-webkit-slider-thumb {
     text-overflow: ellipsis;
     background: var(--bg-dark);
     gap: 4px;
+    position: sticky;
+    top: 16px; /* Changed from 0 to 16px */
+    z-index: 10;
 }
 
 .tl-audio-label i {
@@ -1128,20 +1143,6 @@ input[type="range"]::-webkit-slider-thumb {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     color: var(--text-primary);
     box-shadow: 0 1px 0 var(--border);
-}
-
-/* Custom scrollbar for the help content */
-.help-content::-webkit-scrollbar {
-    width: 6px;
-}
-
-.help-content::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.help-content::-webkit-scrollbar-thumb {
-    background: var(--text-dim);
-    border-radius: 3px;
 }
 
 /* ═══════════════════════════════════════════════════

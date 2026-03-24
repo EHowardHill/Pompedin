@@ -1,6 +1,6 @@
 {
   "productName": "Pompedin",
-  "version": "1.0.6",
+  "version": "1.0.8",
   "identifier": "com.cinemint.pompedin",
   "build": {
     "frontendDist": "../src"
@@ -17,7 +17,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com; img-src 'self' data: blob: asset: https://asset.localhost; media-src 'self' data: blob: asset: https://asset.localhost; connect-src 'self' ipc: http://ipc.localhost https://cdnjs.cloudflare.com"
+      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com; img-src 'self' data: blob: asset: https://asset.localhost; media-src 'self' data: blob: asset: https://asset.localhost; connect-src 'self' ipc: http://ipc.localhost https://tauri.localhost https://cdnjs.cloudflare.com"
     }
   },
   "bundle": {

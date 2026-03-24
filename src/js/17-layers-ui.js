@@ -160,7 +160,7 @@
                     left: e.clientX - 20
                 });
 
-                $('.layer-item').css('background', '');
+                $('.layer-item').removeClass('drag-top drag-bot');
 
                 layerDrag.ghost.hide();
                 var target = document.elementFromPoint(e.clientX, e.clientY);
@@ -168,12 +168,88 @@
 
                 var $targetItem = $(target).closest('.layer-item');
                 if ($targetItem.length && $targetItem.data('id') !== layerDrag.id) {
-                    $targetItem.css('background', 'var(--bg-active)');
+
+                    // Calculate if we are hovering the top or bottom half of the target
+                    var rect = $targetItem[0].getBoundingClientRect();
+                    var relY = e.clientY - rect.top;
+                    var insertBelow = relY >= rect.height / 2;
+
+                    if (insertBelow) {
+                        $targetItem.addClass('drag-bot');
+                    } else {
+                        $targetItem.addClass('drag-top');
+                    }
+
                     layerDrag.targetId = +$targetItem.data('id');
+                    layerDrag.insertBelow = insertBelow;
                 } else {
                     layerDrag.targetId = null;
                 }
             }
+        });
+
+        $(window).on('pointerup', function (e) {
+            if (!layerDrag) return;
+
+            if (!layerDrag.isDragging) {
+                // It was just a click! Perform layer selection.
+                S.activeId = layerDrag.id;
+                VF.selSegments = [];
+                VF.clearHandles();
+                VF.uiLayers();
+                VF.render();
+            } else {
+                // It was a drag. Perform the layer reorder.
+                if (layerDrag.targetId && layerDrag.targetId !== layerDrag.id) {
+                    VF.saveHistory();
+                    var sorted2 = [].concat(S.layers).sort(function (a, b) { return b.z - a.z; });
+                    var srcIdx = sorted2.findIndex(function (x) { return x.id === layerDrag.id; });
+
+                    if (srcIdx > -1) {
+                        var moved = sorted2.splice(srcIdx, 1)[0];
+                        var tgtIdx = sorted2.findIndex(function (x) { return x.id === layerDrag.targetId; });
+
+                        if (tgtIdx > -1) {
+                            // Insert precisely above or below
+                            if (layerDrag.insertBelow) {
+                                sorted2.splice(tgtIdx + 1, 0, moved);
+                            } else {
+                                sorted2.splice(tgtIdx, 0, moved);
+                            }
+
+                            // Reassign sequential Z-indexes
+                            var len = sorted2.length;
+                            sorted2.forEach(function (l, i) { l.z = len - 1 - i; });
+
+                            // FIX: Restack Paper.js canvases physically (Bottom-to-Top)
+                            var canvasSorted = [].concat(sorted2).sort(function (a, b) { return a.z - b.z; });
+                            canvasSorted.forEach(function (l) {
+                                if (VF.pLayers && VF.pLayers[l.id]) {
+                                    VF.pLayers[l.id].bringToFront();
+                                }
+                            });
+
+                            // Ensure system overlays are slapped back on top of the drawing layers
+                            if (VF.fxLayer) VF.fxLayer.bringToFront();
+                            if (VF.onionLayerFg) VF.onionLayerFg.bringToFront();
+                            if (VF.fgLayer) VF.fgLayer.bringToFront();
+                        }
+                    }
+                }
+
+                S.activeId = layerDrag.id;
+
+                // Cleanup UI
+                layerDrag.el.css('opacity', '1');
+                $('.layer-item').removeClass('drag-top drag-bot');
+                if (layerDrag.ghost) layerDrag.ghost.remove();
+
+                VF._isDraggingLayer = false;
+                VF.uiLayers();
+                VF.render();
+                VF.uiTimeline();
+            }
+            layerDrag = null;
         });
 
         $(window).on('pointerup', function (e) {

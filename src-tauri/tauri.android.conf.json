@@ -1,0 +1,15 @@
+{
+  "build": {
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "npm run serve"
+  },
+  "app": {
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "externalBin": [],
+    "resources": []
+  }
+}

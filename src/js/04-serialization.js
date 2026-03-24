@@ -145,7 +145,10 @@
                     tex: c.data.tex,
                     col: c.data.strokeCol,
                     size: c.data.brushSize,
-                    seed: c.data.seed || 0
+                    seed: c.data.seed || 0,
+                    rot: c.data.rot || 0,
+                    angJit: c.data.angJit !== undefined ? c.data.angJit : 100,
+                    posJit: c.data.posJit || 0
                 };
 
                 var mat = c.matrix;
@@ -205,14 +208,14 @@
                                 width: p.width
                             };
                         });
-                        var grp = VF.renderPressureTextureRibbon(pts, parsed.tex, parsed.col, parsed.size, parsed.seed);
+                        var grp = VF.renderPressureTextureRibbon(pts, parsed.tex, parsed.col, parsed.size, parsed);
                         if (grp) pl.addChild(grp);
                     } else if (parsed.pathJSON) {
                         var tempGroup = new P.Group({ insert: false });
                         var guidePath = tempGroup.importJSON(parsed.pathJSON);
                         if (guidePath) {
                             guidePath.remove();
-                            var grp2 = VF.renderTextureRibbon(guidePath, parsed.tex, parsed.col, parsed.size, { seed: parsed.seed });
+                            var grp2 = VF.renderTextureRibbon(guidePath, parsed.tex, parsed.col, parsed.size, parsed);
                             if (grp2) pl.addChild(grp2);
                         }
                         tempGroup.remove();
@@ -289,7 +292,8 @@
                         VF.view.center = new P.Point(S.canvas.w / 2, S.canvas.h / 2);
                         VF.view.update();
 
-                        var raster = pl.rasterize(72 * dpr, false);
+                        var resolution = Math.max(72, 72 * VF.view.zoom) * dpr;
+                        var raster = pl.rasterize(resolution, false);
 
                         VF.view.zoom = oldZoom;
                         VF.view.center = oldCenter;

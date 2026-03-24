@@ -109,6 +109,26 @@
                         var skinGroup = new P.Group();
                         targetLayer.addChild(skinGroup);
 
+                        // Compensate for camera difference between current and onion frame
+                        if (VF.hasCameraKeyframes && VF.hasCameraKeyframes()) {
+                            var camCur = VF.getCameraAtFrame(f);
+                            var camOnion = VF.getCameraAtFrame(targetF);
+                            var camDx = camOnion.x - camCur.x;
+                            var camDy = camOnion.y - camCur.y;
+                            var camZoomRatio = camCur.zoom / camOnion.zoom;
+                            var camRotDelta = camOnion.rotation - camCur.rotation;
+
+                            // Apply inverse camera delta so onion aligns with current viewport
+                            var camCompensate = new P.Matrix();
+                            camCompensate.translate(camCur.x, camCur.y);
+                            camCompensate.scale(camZoomRatio);
+                            camCompensate.rotate(-camRotDelta);
+                            camCompensate.translate(-camOnion.x, -camOnion.y);
+
+                            skinGroup.applyMatrix = false;
+                            skinGroup.matrix = camCompensate;
+                        }
+
                         // ── Apply transforms to onion skins ──
                         if (VF.getLayerTransform) {
                             var xfo = VF.getLayerTransform(l, targetF);
@@ -234,8 +254,6 @@
         VF.fgLayer.bringToFront();
         VF.drawBorder();
         if (VF.renderCameraOverlay) VF.renderCameraOverlay();
-        VF.uiFrameDisp();
-        VF.uiPlayhead();
     };
 
 })();

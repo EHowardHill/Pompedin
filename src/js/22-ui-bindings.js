@@ -67,6 +67,51 @@
         }
     });
 
+    // ── Brush Spacing ──
+    $('#rng-spacing').on('input', function () {
+        S.cfg.brushSpacing = +$(this).val();
+        $('#v-spacing').val(this.value);
+    });
+    $('#v-spacing').on('change input', function () {
+        var val = Math.max(5, Math.min(200, +$(this).val() || 5));
+        S.cfg.brushSpacing = val;
+        $('#rng-spacing').val(val);
+    });
+
+    // ── Brush Dynamics ──
+    $('#rng-rot').on('input', function () {
+        S.cfg.brushRotation = +$(this).val();
+        $('#v-rot').val(this.value);
+    });
+    $('#v-rot').on('change input', function () {
+        var val = Math.max(-180, Math.min(180, +$(this).val() || 0));
+        S.cfg.brushRotation = val; $('#rng-rot').val(val);
+    });
+
+    $('#rng-angjit').on('input', function () {
+        S.cfg.brushAngleJitter = +$(this).val();
+        $('#v-angjit').val(this.value);
+    });
+    $('#v-angjit').on('change input', function () {
+        var val = Math.max(0, Math.min(100, +$(this).val() || 0));
+        S.cfg.brushAngleJitter = val; $('#rng-angjit').val(val);
+    });
+
+    $('#rng-posjit').on('input', function () {
+        S.cfg.brushPosJitter = +$(this).val();
+        $('#v-posjit').val(this.value);
+    });
+    $('#v-posjit').on('change input', function () {
+        var val = Math.max(0, Math.min(200, +$(this).val() || 0));
+        S.cfg.brushPosJitter = val; $('#rng-posjit').val(val);
+    });
+
+    // ── Brush Guide Toggle ──
+    $('#tgl-brush-guide').on('click', function () {
+        S.cfg.showBrushGuide = !S.cfg.showBrushGuide;
+        $(this).toggleClass('on', S.cfg.showBrushGuide);
+    });
+
     // Smooth Bindings (new-stroke only — no selection apply)
     $('#rng-smooth').on('input', function () { S.cfg.smooth = +$(this).val(); $('#v-smooth').val(this.value); });
     $('#v-smooth').on('change input', function () {
@@ -188,6 +233,113 @@
             cvs.addEventListener('pointerdown', function () {
                 VF.abortEyeDropper();
             }, true);   // capture phase so it fires before Paper.js tools
+        }
+
+        // ── DRAG AND DROP LAYER REORDERING ──
+        var draggedLayerId = null;
+        var $layersList = $('#layers-list');
+
+        // Ensure items are draggable whenever the list updates
+        $layersList.on('mouseenter', '.layer-item', function () {
+            $(this).attr('draggable', 'true');
+        });
+
+        $layersList.on('dragstart', '.layer-item', function (e) {
+            draggedLayerId = $(this).data('id'); // Assuming your layer items have data-id="X"
+            e.originalEvent.dataTransfer.effectAllowed = 'move';
+            $(this).css('opacity', '0.4');
+        });
+
+        $layersList.on('dragend', '.layer-item', function () {
+            $(this).css('opacity', '1');
+            $('.layer-item').removeClass('drag-top drag-bot');
+            draggedLayerId = null;
+        });
+
+        $layersList.on('dragover', '.layer-item', function (e) {
+            e.preventDefault();
+            e.originalEvent.dataTransfer.dropEffect = 'move';
+
+            var rect = this.getBoundingClientRect();
+            var relY = e.originalEvent.clientY - rect.top;
+
+            $('.layer-item').removeClass('drag-top drag-bot');
+
+            // Show indicator on top half or bottom half
+            if (relY < rect.height / 2) {
+                $(this).addClass('drag-top');
+            } else {
+                $(this).addClass('drag-bot');
+            }
+        });
+
+        $layersList.on('dragleave', '.layer-item', function () {
+            $(this).removeClass('drag-top drag-bot');
+        });
+
+        $layersList.on('drop', '.layer-item', function (e) {
+            e.preventDefault();
+            $(this).removeClass('drag-top drag-bot');
+
+            if (!draggedLayerId) return;
+
+            var targetId = $(this).data('id');
+            if (draggedLayerId === targetId) return;
+
+            var rect = this.getBoundingClientRect();
+            var relY = e.originalEvent.clientY - rect.top;
+            var insertBelowUI = relY >= rect.height / 2;
+
+            reorderLayer(draggedLayerId, targetId, insertBelowUI);
+        });
+
+        // The core reordering engine
+        function reorderLayer(dragId, dropId, insertBelowUI) {
+            VF.saveHistory();
+
+            // Sort Top-to-Bottom based on UI (highest Z is at index 0)
+            var sorted = [].concat(S.layers).sort(function (a, b) { return b.z - a.z; });
+            var dragIdx = sorted.findIndex(function (l) { return l.id === dragId; });
+            var dropIdx = sorted.findIndex(function (l) { return l.id === dropId; });
+
+            if (dragIdx === -1 || dropIdx === -1) return;
+
+            // Pull the dragged layer out
+            var layerToMove = sorted.splice(dragIdx, 1)[0];
+
+            // Re-find the drop index after array mutation
+            dropIdx = sorted.findIndex(function (l) { return l.id === dropId; });
+
+            // Insert into new position
+            if (insertBelowUI) {
+                sorted.splice(dropIdx + 1, 0, layerToMove);
+            } else {
+                sorted.splice(dropIdx, 0, layerToMove);
+            }
+
+            // Apply new sequential Z-indexes (Highest Z goes to top of UI)
+            var currentZ = sorted.length;
+            sorted.forEach(function (l) {
+                l.z = currentZ--;
+            });
+
+            // Restack Paper.js canvases physically (Bottom-to-Top)
+            var canvasSorted = [].concat(sorted).sort(function (a, b) { return a.z - b.z; });
+            canvasSorted.forEach(function (l) {
+                if (VF.pLayers[l.id]) {
+                    VF.pLayers[l.id].bringToFront();
+                }
+            });
+
+            // Ensure system overlays are always slapped back on top of the drawing layers
+            if (VF.fxLayer) VF.fxLayer.bringToFront();
+            if (VF.onionLayerFg) VF.onionLayerFg.bringToFront();
+            if (VF.fgLayer) VF.fgLayer.bringToFront();
+
+            // Refresh UI
+            if (window.VF.uiLayers) window.VF.uiLayers(); // Refreshes #layers-list
+            VF.uiTimeline();
+            VF.render();
         }
     });
 

@@ -193,22 +193,34 @@
 
         var cellW = 18;
         var height = 24;
+        var dpr = window.devicePixelRatio || 1;
 
-        // Ensure canvas width covers whichever is longer: the project or the audio
         var audioFrames = A.waveformData ? A.waveformData.length : 0;
         var displayFrames = Math.max(S.tl.max, audioFrames);
 
-        canvas.width = displayFrames * cellW;
-        canvas.height = height;
+        // FIX: Prevent the "Sad Face" Canvas OOM Crash
+        // Browsers kill canvases that exceed ~32,000 physical pixels in width.
+        var maxSafePixels = 30000;
+        var maxSafeFrames = Math.floor(maxSafePixels / (cellW * dpr));
+
+        // Cap the render loop so it never exceeds the safe browser limit
+        displayFrames = Math.min(displayFrames, maxSafeFrames);
+
+        // Scale internal canvas resolution
+        canvas.width = displayFrames * cellW * dpr;
+        canvas.height = height * dpr;
+
+        // Force the visual CSS footprint to stay exactly the same
         canvas.style.width = (displayFrames * cellW) + 'px';
         canvas.style.height = height + 'px';
 
         var ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.scale(dpr, dpr);
+        ctx.clearRect(0, 0, displayFrames * cellW, height);
 
         if (!A.waveformData || A.waveformData.length === 0) {
             ctx.fillStyle = 'rgba(128, 128, 128, 0.15)';
-            ctx.fillRect(0, height / 2, canvas.width, 1);
+            ctx.fillRect(0, height / 2, displayFrames * cellW, 1);
             return;
         }
 
@@ -221,12 +233,8 @@
             if (barH < 0.5) barH = 0.5;
 
             var x = f * cellW;
-            var isCurrent = f === S.tl.frame;
 
-            if (isCurrent) {
-                ctx.fillStyle = 'rgba(74, 111, 255, 0.75)';
-            } else if (f >= S.tl.max) {
-                // Dimmer color for audio that goes past the animation end frame
+            if (f >= S.tl.max) {
                 ctx.fillStyle = peak > 0.6 ? 'rgba(150, 150, 150, 0.4)' : 'rgba(150, 150, 150, 0.2)';
             } else if (peak > 0.6) {
                 ctx.fillStyle = 'rgba(74, 111, 255, 0.45)';
@@ -250,7 +258,7 @@
         }
 
         // Draw a warning line at the project's actual End Frame 
-        if (audioFrames > S.tl.max) {
+        if (audioFrames > S.tl.max && S.tl.max <= displayFrames) {
             ctx.strokeStyle = 'rgba(218, 42, 0, 0.6)';
             ctx.lineWidth = 1;
             ctx.beginPath();

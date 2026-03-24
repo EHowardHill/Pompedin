@@ -31,6 +31,11 @@
         let $btn = $('#btn-export-mp4');
         $btn.prop('disabled', true).text('Preparing...');
 
+        // Lock down the UI with the export modal
+        $('#export-progress-bar').css('width', '0%');
+        $('#export-status-text').text('Preparing export...');
+        $('#modal-export').css('display', 'flex');
+
         // Save current state and clear UI selections
         VF.saveFrame();
         VF.clearHandles();
@@ -49,7 +54,7 @@
         VF.onionLayerFg.visible = false;
         VF.fgLayer.visible = false;
 
-        /* FIX: Hide reference layers during MP4 export (matching PNG export) */
+        /* Hide reference layers during MP4 export (matching PNG export) */
         var hiddenRefLayers = [];
         S.layers.forEach(function (l) {
             if (l.reference && l.vis) {
@@ -61,7 +66,7 @@
             }
         });
 
-        /* FIX: Hide wobble temp layers during MP4 export */
+        /* Hide wobble temp layers during MP4 export */
         var hiddenWobble = [];
         if (VF._wobbleTempLayers) {
             VF._wobbleTempLayers.forEach(function (tl) {
@@ -131,26 +136,37 @@
                     image: dataUrl
                 });
 
-                // Update UI progress
+                // Update UI progress (Frame rendering represents roughly the first 50% of the time)
+                let renderPercent = Math.round(((i + 1) / S.tl.max) * 50);
+                $('#export-progress-bar').css('width', renderPercent + '%');
+                $('#export-status-text').text('Rendering frame ' + (i + 1) + ' of ' + S.tl.max);
                 $btn.text('Exporting ' + (i + 1) + ' / ' + S.tl.max);
             }
 
             VF._exporting = false; // Turn off high-res forced render
             $btn.text('Encoding Video...');
+            $('#export-progress-bar').css('width', '50%'); // Push to half-way explicitly
+            $('#export-status-text').text('Encoding video file (FFmpeg)...');
 
             // 4. Trigger FFmpeg rendering in Rust
             let includeAudio = !!(VF.audio && VF.audio.filename);
 
+            // Calculate exact animation duration in seconds for FFmpeg truncation
+            let durationSec = S.tl.max / S.tl.fps;
+
             await invoke('mp4_render', {
                 sessionId: sessionId,
                 fps: S.tl.fps,
-                includeAudio: includeAudio,
-                audioData: includeAudio ? S.audioData : null,         // New
-                audioFilename: includeAudio ? S.audioFilename : null, // New
                 totalFrames: S.tl.max,
+                durationSec: durationSec, // NEW: Tell FFmpeg exactly when to stop
+                includeAudio: includeAudio,
+                audioData: includeAudio ? S.audioData : null,
+                audioFilename: includeAudio ? S.audioFilename : null,
+                audioVolume: includeAudio ? VF.audio.volume : 1.0, // NEW: Sync MP4 volume to workspace
                 outputPath: outputPath
             });
 
+            $('#export-progress-bar').css('width', '100%');
             VF.toast("MP4 Exported Successfully!");
         } catch (err) {
             console.error("Export failed:", err);
@@ -159,13 +175,16 @@
             // 5. Restore original state and UI
             VF._exporting = false;
 
+            // Release the UI lock
+            $('#modal-export').hide();
+
             if (borderRect) borderRect.visible = true;
             if (borderOutline) borderOutline.visible = true;
             VF.onionLayerBg.visible = true;
             VF.onionLayerFg.visible = true;
             VF.fgLayer.visible = true;
 
-            /* FIX: Restore reference layers */
+            /* Restore reference layers */
             hiddenRefLayers.forEach(function (pl) { pl.visible = true; });
             hiddenWobble.forEach(function (tl) { tl.visible = true; });
 

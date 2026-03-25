@@ -419,8 +419,9 @@
         for (var i = 0; i < max; i++) {
             var cc = i === cur ? ' cur' : '';
             var hasKey = S.camera.frames[i] !== undefined;
+            var selCls = hasKey && VF.tlSelection.find(function (s) { return s.f === i && s.l === '__camera'; }) ? ' tl-selected' : '';
             var content = hasKey
-                ? '<div class="tl-dot keyframe cam-dot" data-f="' + i + '"></div>'
+                ? '<div class="tl-dot keyframe cam-dot' + selCls + '" data-f="' + i + '"></div>'
                 : '';
             cells += '<div class="tl-cell' + cc + '" data-f="' + i + '" data-l="__camera" style="position:relative">' + content + '</div>';
         }
@@ -542,8 +543,7 @@
         $('#cam-x, #cam-y, #cam-zoom, #cam-rot').on('change', applyCamInputs);
         $('#cam-x, #cam-y, #cam-zoom, #cam-rot').on('keydown keyup keypress', function (e) { e.stopPropagation(); });
 
-        var _origGoFrame = VF.goFrame;
-        VF.goFrame = function (f) { _origGoFrame(f); VF.updateCameraUI(); };
+        VF._goFrameHooks.push(VF.updateCameraUI);
         setTimeout(VF.updateCameraUI, 100);
     });
 

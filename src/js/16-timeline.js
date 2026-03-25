@@ -9,6 +9,8 @@
         $('#frame-disp').text((S.tl.frame + 1) + ' / ' + S.tl.max);
     };
 
+    VF._goFrameHooks = [];
+
     VF.goFrame = function (f) {
         VF.saveFrame();
         VF.selSegments = [];
@@ -18,9 +20,12 @@
         VF.render();
         VF.updateTimelineState();
 
-        // Only trigger the short scrubbing snippet if the timeline is paused
         if (!S.tl.playing && window.VF.playFrameAudio) {
             VF.playFrameAudio(S.tl.frame);
+        }
+
+        for (var i = 0; i < VF._goFrameHooks.length; i++) {
+            VF._goFrameHooks[i](S.tl.frame);
         }
     };
 

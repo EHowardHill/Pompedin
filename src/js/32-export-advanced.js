@@ -43,7 +43,7 @@
         var origCenter = VF.view.center.clone();
 
         /* ── Hide UI elements ── */
-        VF.saveFrame(true);
+        VF.saveFrame();
         VF.clearHandles();
 
         var borderRect = VF.getBorderRect();

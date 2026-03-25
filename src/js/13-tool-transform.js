@@ -115,8 +115,8 @@
                     }
                 });
             } else if (S.tool === 'rotate') {
-                var globalOrigin = pl.localToGlobal(xOrigin);
-                var curAngle = Math.atan2(e.point.y - globalOrigin.y, e.point.x - globalOrigin.x) * (180 / Math.PI);
+                var globalOriginRot = pl.localToGlobal(xOrigin);
+                var curAngle = Math.atan2(e.point.y - globalOriginRot.y, e.point.x - globalOriginRot.x) * (180 / Math.PI);
                 var deltaAng = curAngle - tXform.startAngle;
                 if (e.event.shiftKey) deltaAng = Math.round(deltaAng / 15) * 15;
 
@@ -134,8 +134,8 @@
                     orig.seg.handleOut = new P.Point(hOutX * cos - hOutY * sin, hOutX * sin + hOutY * cos);
                 });
             } else if (S.tool === 'scale') {
-                var globalOrigin = pl.localToGlobal(xOrigin);
-                var curDist = e.point.getDistance(globalOrigin);
+                var globalOriginScale = pl.localToGlobal(xOrigin);
+                var curDist = e.point.getDistance(globalOriginScale);
                 var fac = tXform.startDist > 0.1 ? curDist / tXform.startDist : 1;
                 if (e.event.shiftKey) fac = Math.round(fac * 10) / 10;
 

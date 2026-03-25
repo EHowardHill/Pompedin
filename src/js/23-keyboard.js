@@ -50,7 +50,10 @@
                 tex: c.data.tex,
                 col: c.data.strokeCol,
                 size: c.data.brushSize,
-                seed: c.data.seed || 0
+                seed: c.data.seed || 0,
+                rot: c.data.rot || 0,
+                angJit: c.data.angJit !== undefined ? c.data.angJit : 100,
+                posJit: c.data.posJit || 0
             };
 
             var mat = c.matrix;
@@ -108,7 +111,12 @@
                         };
                     });
                     var grp = VF.renderPressureTextureRibbon(
-                        pts, parsed.tex, parsed.col, parsed.size, parsed.seed
+                        pts, parsed.tex, parsed.col, parsed.size, {
+                        seed: parsed.seed || 0,
+                        rot: parsed.rot || 0,
+                        angJit: parsed.angJit !== undefined ? parsed.angJit : 100,
+                        posJit: parsed.posJit || 0
+                    }
                     );
                     if (grp) pl.addChild(grp);
                     return grp;
@@ -118,8 +126,12 @@
                     if (guidePath) {
                         guidePath.remove();
                         var grp2 = VF.renderTextureRibbon(
-                            guidePath, parsed.tex, parsed.col, parsed.size,
-                            { seed: parsed.seed }
+                            guidePath, parsed.tex, parsed.col, parsed.size, {
+                            seed: parsed.seed || 0,
+                            rot: parsed.rot || 0,
+                            angJit: parsed.angJit !== undefined ? parsed.angJit : 100,
+                            posJit: parsed.posJit || 0
+                        }
                         );
                         if (grp2) pl.addChild(grp2);
                         tempGroup.remove();
@@ -561,6 +573,7 @@
                 }
                 VF.saveHistory();
                 var items = VF.getSelectedItems();
+                console.log('Deleting items:', items.map(function (it) { return it.className + ' (children: ' + (it.children ? it.children.length : 0) + ')'; }));
                 items.forEach(function (item) { item.remove(); });
                 VF.selSegments = [];
                 VF.clearHandles();

@@ -1,6 +1,11 @@
 (function () {
     "use strict";
 
+    if (!window.requestIdleCallback) {
+        window.requestIdleCallback = function (cb) { return setTimeout(cb, 1); };
+        window.cancelIdleCallback = function (id) { clearTimeout(id); };
+    }
+
     window.VF = {};
 
     VF.S = {

@@ -61,9 +61,19 @@
             var pts = c.data.pressurePoints.map(function (p) {
                 return { point: new P.Point(p.x, p.y), angle: p.angle, width: p.width };
             });
-            tempGrp = VF.renderPressureTextureRibbon(pts, c.data.tex, c.data.strokeCol, c.data.brushSize, c.data.seed);
+            tempGrp = VF.renderPressureTextureRibbon(pts, c.data.tex, c.data.strokeCol, c.data.brushSize, {
+                seed: c.data.seed,
+                rot: c.data.rot || 0,
+                angJit: c.data.angJit !== undefined ? c.data.angJit : 100,
+                posJit: c.data.posJit || 0
+            });
         } else if (guide) {
-            tempGrp = VF.renderTextureRibbon(guide.clone({ insert: false }), c.data.tex, c.data.strokeCol, c.data.brushSize, { seed: c.data.seed });
+            tempGrp = VF.renderTextureRibbon(guide.clone({ insert: false }), c.data.tex, c.data.strokeCol, c.data.brushSize, {
+                seed: c.data.seed,
+                rot: c.data.rot || 0,
+                angJit: c.data.angJit !== undefined ? c.data.angJit : 100,
+                posJit: c.data.posJit || 0
+            });
         }
         if (tempGrp) {
             var newChildren = Array.from(tempGrp.children);

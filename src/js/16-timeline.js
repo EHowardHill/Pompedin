@@ -69,13 +69,19 @@
                 // Handle looping logic
                 if (expectedFrame >= maxFrames) {
                     expectedFrame = 0;
-                    if (A.buffer && A.isPlaying && window.VF.startAudioPlayback) {
-                        // Restart audio, which inherently resets A.startTime for the next loop
+                    // FIX: Check A.buffer (audio track exists) rather than
+                    // A.buffer && A.isPlaying. When the audio's BufferSourceNode
+                    // reaches the end of its buffer, its onended callback fires
+                    // and sets A.isPlaying = false BEFORE the animation loop
+                    // detects the frame wrap. So by the time we get here,
+                    // isPlaying is already false and audio would never restart.
+                    if (A.buffer && window.VF.startAudioPlayback) {
+                        // Restart audio from the beginning for the next loop
                         VF.startAudioPlayback(0);
-                    } else {
-                        // Reset the fallback timer
-                        animStartTime = performance.now();
                     }
+                    // Always reset the fallback timer so the frame counter
+                    // stays in sync regardless of whether audio is present.
+                    animStartTime = performance.now();
                 }
 
                 // Only render if the clock has crossed into a new frame boundary

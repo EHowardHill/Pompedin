@@ -94,6 +94,12 @@
 
         // ═══════════════════════════════════════════════════
         //  CUSTOM POINTER-BASED DRAG ENGINE
+        //
+        //  FIX: Added setPointerCapture() to ensure pen/stylus
+        //  drag events are reliably received even when the pointer
+        //  moves outside the originating element. Also handles
+        //  pointercancel (fired by pen palm rejection, system
+        //  gesture interception, etc.) to prevent ghost drags.
         // ═══════════════════════════════════════════════════
         var layerDrag = null;
         var lastLyrClickTime = 0;
@@ -118,9 +124,18 @@
 
             e.preventDefault();
 
+            // FIX: Capture the pointer on the originating element so that
+            // pointermove/pointerup events continue to fire reliably even
+            // when using a pen/stylus that leaves the element bounds.
+            var pointerId = e.pointerId;
+            var rawEl = this; // the .layer-item DOM element
+            try { rawEl.setPointerCapture(pointerId); } catch (_) { }
+
             layerDrag = {
                 id: id,
                 el: $(this),
+                rawEl: rawEl,          // FIX: store for releasePointerCapture
+                pointerId: pointerId,  // FIX: store for releasePointerCapture
                 startX: e.clientX,
                 startY: e.clientY,
                 isDragging: false,
@@ -188,8 +203,16 @@
             }
         });
 
-        $(window).on('pointerup', function (e) {
+        /**
+         * FIX: Shared cleanup function used by both pointerup and pointercancel.
+         * Ensures ghost elements are removed and state is reset regardless of
+         * how the pointer interaction ends (normal lift, pen leave, palm reject, etc.)
+         */
+        function finishLayerDrag(e) {
             if (!layerDrag) return;
+
+            // FIX: Release pointer capture
+            try { layerDrag.rawEl.releasePointerCapture(layerDrag.pointerId); } catch (_) { }
 
             if (!layerDrag.isDragging) {
                 // It was just a click! Perform layer selection.
@@ -214,14 +237,13 @@
                     }
                 }
 
-                /* FIX: Keep the dragged layer as the active layer after reorder.
-                   Previously, the active layer could become deselected visually
-                   if the drag changed the z-order. */
+                /* Keep the dragged layer as the active layer after reorder. */
                 S.activeId = layerDrag.id;
 
                 // Cleanup UI
                 layerDrag.el.css('opacity', '1');
                 $('.layer-item').css('background', '');
+                $('.layer-item').removeClass('drag-top drag-bot');
                 if (layerDrag.ghost) layerDrag.ghost.remove();
 
                 VF._isDraggingLayer = false;
@@ -229,6 +251,41 @@
                 VF.render();
                 VF.uiTimeline();
             }
+            layerDrag = null;
+        }
+
+        $(window).on('pointerup', finishLayerDrag);
+
+        // FIX: Handle pointercancel — fired when the browser/OS cancels a
+        // pointer interaction mid-drag. Common with pen input due to palm
+        // rejection, system gesture interception, or the pen leaving the
+        // digitizer's detection range. Without this, the drag state gets
+        // stuck: the ghost element remains visible and layerDrag is never
+        // cleared, causing the layer panel to freeze (VF._isDraggingLayer
+        // stays true, blocking uiLayers() refreshes).
+        $(window).on('pointercancel', function (e) {
+            if (!layerDrag) return;
+
+            // Release pointer capture
+            try { layerDrag.rawEl.releasePointerCapture(layerDrag.pointerId); } catch (_) { }
+
+            // Clean up without committing the reorder (the drag was cancelled)
+            if (layerDrag.isDragging) {
+                layerDrag.el.css('opacity', '1');
+                $('.layer-item').css('background', '');
+                $('.layer-item').removeClass('drag-top drag-bot');
+                if (layerDrag.ghost) layerDrag.ghost.remove();
+                VF._isDraggingLayer = false;
+                VF.uiLayers();
+            } else {
+                // If we hadn't started dragging yet, just select the layer
+                S.activeId = layerDrag.id;
+                VF.selSegments = [];
+                VF.clearHandles();
+                VF.uiLayers();
+                VF.render();
+            }
+
             layerDrag = null;
         });
     });

@@ -12,10 +12,10 @@
         var targetFrame = res ? res.keyFrame : S.tl.frame;
 
         if (l.type === 'vector') {
-            // FIX (Bug #7): serPL now temporarily resets the layer matrix
-            // to Identity before exporting, then restores it. This ensures
-            // children are serialized in their own local coordinate space,
-            // preventing the "matrix baking" accumulation loop.
+            // serPL exports children in their local coordinate space.
+            // Because render() sets `pl.applyMatrix = false`, the layer-level
+            // transform matrix is never baked into children's coordinates,
+            // so no matrix reset/restore is needed during serialization.
             l.frames[targetFrame] = VF.serPL(VF.pLayers[l.id]);
         } else if (l.type === 'image') {
             // Image rasters track their own local matrices, independent 

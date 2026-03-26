@@ -464,7 +464,7 @@ async fn mp4_render(
     audio_data: Option<String>,
     audio_filename: Option<String>,
     audio_volume: f32, // NEW: Matches audioVolume in JS
-    total_frames: u32,
+    _total_frames: u32,
     duration_sec: f64, // NEW: Matches durationSec in JS
     output_path: String,
 ) -> Result<(), String> {
@@ -631,7 +631,7 @@ pub fn run() {
         // ── Android MediaCodec plugin ──────────────────────────────
         .plugin(
             tauri::plugin::Builder::new("mp4-encoder")
-                .setup(|app, _api: tauri::plugin::PluginApi<tauri::Wry, ()>| {
+                .setup(|_app, _api: tauri::plugin::PluginApi<tauri::Wry, ()>| {
                     #[cfg(target_os = "android")]
                     {
                         let handle = _api

@@ -161,25 +161,18 @@
     };
 
     /**
-     * FIX (Bug #7): Temporarily reset the layer's matrix to Identity before
-     * serializing children, so that the layer-level transform is NOT baked
-     * into the exported coordinates. The matrix is restored immediately after.
-     * This prevents the "matrix accumulation" bug where each save/load cycle
-     * compounds the layer transform into the children's native positions.
+     * Serialize a paper layer's children to an array of JSON strings.
+     *
+     * NOTE: The layer-level matrix (set by 07-render.js for transforms) is
+     * intentionally NOT touched here. Because render() sets
+     * `pl.applyMatrix = false`, the matrix is kept separate from the
+     * children's coordinates — children are always stored in their own
+     * local (un-transformed) space. This prevents the "matrix baking"
+     * accumulation bug without needing to reset/restore the matrix.
      */
     VF.serPL = function (pl) {
         var P = getP();
         var out = [];
-
-        // Save and temporarily reset the layer matrix so children export
-        // in their own local (un-transformed) coordinate space.
-        var savedMatrix = null;
-        var savedApplyMatrix = pl.applyMatrix;
-        if (pl.matrix && !pl.matrix.isIdentity()) {
-            savedMatrix = pl.matrix.clone();
-            pl.applyMatrix = true;   // Let Paper.js apply identity
-            pl.matrix = new P.Matrix(); // Reset to identity
-        }
 
         pl.children.forEach(function (c) {
             if (c._isH) return;
@@ -231,12 +224,6 @@
                 out.push(c.exportJSON({ asString: true }));
             }
         });
-
-        // Restore the original layer matrix
-        if (savedMatrix) {
-            pl.matrix = savedMatrix;
-            pl.applyMatrix = savedApplyMatrix;
-        }
 
         return out;
     };

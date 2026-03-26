@@ -365,6 +365,9 @@
 
             // Ctrl/Cmd+Click: Toggle Selection
             if (e.ctrlKey || e.metaKey) {
+                // FIX (Bug #6): Only allow Ctrl+Click toggle if there's actually
+                // a keyframe dot present. Without this check, clicking on empty
+                // cells would add phantom selections to VF.tlSelection.
                 if ($dot.length === 0) return;
                 var selIdx = VF.tlSelection.findIndex(function (s) { return s.f === f && s.l === l && s.type === type; });
                 if (selIdx > -1) {

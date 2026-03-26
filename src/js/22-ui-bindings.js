@@ -121,8 +121,8 @@
 
     // Layer Opacity Bindings
     // FIX: Call VF.render() so opacity changes are immediately visible
-    //       (the old code only set pl.opacity but didn't trigger a redraw
-    //        for vector layers that might be using wobble, blend modes, etc.)
+    //        (the old code only set pl.opacity but didn't trigger a redraw
+    //         for vector layers that might be using wobble, blend modes, etc.)
     $('#rng-opacity').on('input', function () {
         var l = VF.AL(); if (!l) return;
         l.opacity = +this.value / 100;
@@ -233,113 +233,6 @@
             cvs.addEventListener('pointerdown', function () {
                 VF.abortEyeDropper();
             }, true);   // capture phase so it fires before Paper.js tools
-        }
-
-        // ── DRAG AND DROP LAYER REORDERING ──
-        var draggedLayerId = null;
-        var $layersList = $('#layers-list');
-
-        // Ensure items are draggable whenever the list updates
-        $layersList.on('mouseenter', '.layer-item', function () {
-            $(this).attr('draggable', 'true');
-        });
-
-        $layersList.on('dragstart', '.layer-item', function (e) {
-            draggedLayerId = $(this).data('id'); // Assuming your layer items have data-id="X"
-            e.originalEvent.dataTransfer.effectAllowed = 'move';
-            $(this).css('opacity', '0.4');
-        });
-
-        $layersList.on('dragend', '.layer-item', function () {
-            $(this).css('opacity', '1');
-            $('.layer-item').removeClass('drag-top drag-bot');
-            draggedLayerId = null;
-        });
-
-        $layersList.on('dragover', '.layer-item', function (e) {
-            e.preventDefault();
-            e.originalEvent.dataTransfer.dropEffect = 'move';
-
-            var rect = this.getBoundingClientRect();
-            var relY = e.originalEvent.clientY - rect.top;
-
-            $('.layer-item').removeClass('drag-top drag-bot');
-
-            // Show indicator on top half or bottom half
-            if (relY < rect.height / 2) {
-                $(this).addClass('drag-top');
-            } else {
-                $(this).addClass('drag-bot');
-            }
-        });
-
-        $layersList.on('dragleave', '.layer-item', function () {
-            $(this).removeClass('drag-top drag-bot');
-        });
-
-        $layersList.on('drop', '.layer-item', function (e) {
-            e.preventDefault();
-            $(this).removeClass('drag-top drag-bot');
-
-            if (!draggedLayerId) return;
-
-            var targetId = $(this).data('id');
-            if (draggedLayerId === targetId) return;
-
-            var rect = this.getBoundingClientRect();
-            var relY = e.originalEvent.clientY - rect.top;
-            var insertBelowUI = relY >= rect.height / 2;
-
-            reorderLayer(draggedLayerId, targetId, insertBelowUI);
-        });
-
-        // The core reordering engine
-        function reorderLayer(dragId, dropId, insertBelowUI) {
-            VF.saveHistory();
-
-            // Sort Top-to-Bottom based on UI (highest Z is at index 0)
-            var sorted = [].concat(S.layers).sort(function (a, b) { return b.z - a.z; });
-            var dragIdx = sorted.findIndex(function (l) { return l.id === dragId; });
-            var dropIdx = sorted.findIndex(function (l) { return l.id === dropId; });
-
-            if (dragIdx === -1 || dropIdx === -1) return;
-
-            // Pull the dragged layer out
-            var layerToMove = sorted.splice(dragIdx, 1)[0];
-
-            // Re-find the drop index after array mutation
-            dropIdx = sorted.findIndex(function (l) { return l.id === dropId; });
-
-            // Insert into new position
-            if (insertBelowUI) {
-                sorted.splice(dropIdx + 1, 0, layerToMove);
-            } else {
-                sorted.splice(dropIdx, 0, layerToMove);
-            }
-
-            // Apply new sequential Z-indexes (Highest Z goes to top of UI)
-            var currentZ = sorted.length;
-            sorted.forEach(function (l) {
-                l.z = currentZ--;
-            });
-
-            // Restack Paper.js canvases physically (Bottom-to-Top)
-            var canvasSorted = [].concat(sorted).sort(function (a, b) { return a.z - b.z; });
-            canvasSorted.forEach(function (l) {
-                if (VF.pLayers[l.id]) {
-                    VF.pLayers[l.id].bringToFront();
-                }
-            });
-
-            // Ensure system overlays are always slapped back on top of the drawing layers
-            if (VF.fxLayer) VF.fxLayer.bringToFront();
-            if (VF.onionLayerFg) VF.onionLayerFg.bringToFront();
-            if (VF.fgLayer) VF.fgLayer.bringToFront();
-
-            // Refresh UI
-            if (window.VF.uiLayers) window.VF.uiLayers(); // Refreshes #layers-list
-            VF.uiTimeline();
-            VF.render();
         }
     });
 

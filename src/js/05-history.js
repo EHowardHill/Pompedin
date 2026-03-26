@@ -12,9 +12,10 @@
         var targetFrame = res ? res.keyFrame : S.tl.frame;
 
         if (l.type === 'vector') {
-            // VF.serPL now internally resets the layer matrix to Identity
-            // before exporting. This prevents the "matrix baking" loop 
-            // when saving state for the Undo stack.
+            // FIX (Bug #7): serPL now temporarily resets the layer matrix
+            // to Identity before exporting, then restores it. This ensures
+            // children are serialized in their own local coordinate space,
+            // preventing the "matrix baking" accumulation loop.
             l.frames[targetFrame] = VF.serPL(VF.pLayers[l.id]);
         } else if (l.type === 'image') {
             // Image rasters track their own local matrices, independent 
@@ -67,8 +68,6 @@
             S.activeId = S.layers[0] ? S.layers[0].id : 1;
         }
 
-        // UI and Render calls handle applying the correct layer matrices 
-        // to the freshly restored un-baked coordinates.
         VF.uiLayers();
         VF.uiTimeline();
         VF.render();

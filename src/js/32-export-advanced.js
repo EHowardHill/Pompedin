@@ -41,6 +41,8 @@
         var origFrame = S.tl.frame;
         var origZoom = VF.view.zoom;
         var origCenter = VF.view.center.clone();
+        // FIX (Bug #5): Save workspace rotation
+        var origRotation = VF.viewRotation || 0;
 
         /* ── Hide UI elements ── */
         VF.saveFrame();
@@ -71,6 +73,12 @@
             VF._wobbleTempLayers.forEach(function (tl) {
                 if (tl.visible) { tl.visible = false; hiddenWobble.push(tl); }
             });
+        }
+
+        // FIX (Bug #5): Reset workspace rotation before rendering export frames
+        if (origRotation) {
+            VF.view.rotate(-origRotation, VF.view.center);
+            VF.viewRotation = 0;
         }
 
         /* ── Set camera ── */
@@ -139,6 +147,13 @@
         VF.fitCanvas();
         VF.view.zoom = origZoom;
         VF.view.center = origCenter;
+
+        // FIX (Bug #5): Restore workspace rotation
+        if (origRotation) {
+            VF.view.rotate(origRotation, VF.view.center);
+            VF.viewRotation = origRotation;
+        }
+
         VF.render();
         VF.uiTimeline();
 
@@ -249,13 +264,9 @@
     /* ── Median-Cut Color Quantizer ── */
 
     GifEncoder.quantize = function (pixels, maxColors) {
-        /* pixels = flat Uint8ClampedArray [r,g,b,a, r,g,b,a, ...]
-           Returns { palette: [[r,g,b], ...], indexMap: Map<key, idx> } */
-
         if (maxColors < 2) maxColors = 2;
         if (maxColors > 256) maxColors = 256;
 
-        /* Sample pixels (every Nth) to keep quantization fast */
         var sampleStep = Math.max(1, Math.floor(pixels.length / (4 * 50000)));
         var colors = [];
         for (var i = 0; i < pixels.length; i += 4 * sampleStep) {
@@ -268,7 +279,6 @@
             return { palette: pal, indexMap: null };
         }
 
-        /* Median-cut boxes */
         var boxes = [{ colors: colors }];
 
         function boxRange(box) {
@@ -288,7 +298,6 @@
         }
 
         while (boxes.length < maxColors) {
-            /* Find box with largest color range AND enough pixels to split */
             var bestIdx = -1, bestRange = -1;
             for (var b = 0; b < boxes.length; b++) {
                 if (boxes[b].colors.length < 2) continue;
@@ -312,7 +321,6 @@
             );
         }
 
-        /* Average each box to get palette colors */
         var palette = boxes.map(function (box) {
             var r = 0, g = 0, b = 0, n = box.colors.length;
             for (var i = 0; i < n; i++) {
@@ -321,13 +329,11 @@
             return [Math.round(r / n), Math.round(g / n), Math.round(b / n)];
         });
 
-        /* Pad palette to power-of-2 size */
         while (palette.length < maxColors) palette.push([0, 0, 0]);
 
         return { palette: palette };
     };
 
-    /* ── Nearest palette color (with cache) ── */
     GifEncoder.buildColorLookup = function (palette) {
         var cache = {};
         return function (r, g, b) {
@@ -348,7 +354,6 @@
         };
     };
 
-    /* ── Ordered dither matrix (4×4 Bayer) ── */
     var BAYER4 = [
         [0, 8, 2, 10],
         [12, 4, 14, 6],
@@ -356,7 +361,6 @@
         [15, 7, 13, 5]
     ];
 
-    /* ── Map frame pixels to palette indices ── */
     GifEncoder.indexFrame = function (imageData, palette, dither) {
         var w = imageData.width, h = imageData.height;
         var px = imageData.data;
@@ -364,7 +368,6 @@
         var lookup = GifEncoder.buildColorLookup(palette);
 
         if (dither) {
-            /* Ordered dithering */
             for (var y = 0; y < h; y++) {
                 for (var x = 0; x < w; x++) {
                     var idx = (y * w + x) * 4;
@@ -385,7 +388,6 @@
         return indices;
     };
 
-    /* ── LZW Compressor for GIF ── */
     GifEncoder.lzwEncode = function (indexStream, minCodeSize) {
         var clearCode = 1 << minCodeSize;
         var eoiCode = clearCode + 1;
@@ -393,14 +395,11 @@
         var nextCode = eoiCode + 1;
         var codeLimit = 1 << codeSize;
 
-        /* LZW dictionary — using string keys for simplicity.
-           For GIF's 256-color max, this is perfectly performant. */
         var table = {};
         for (var i = 0; i < clearCode; i++) {
             table[String(i)] = i;
         }
 
-        /* Bit-packing buffer */
         var bits = 0;
         var bitCount = 0;
         var byteBuffer = [];
@@ -433,7 +432,6 @@
             codeLimit = 1 << codeSize;
         }
 
-        /* Begin with clear code */
         writeBits(clearCode, codeSize);
 
         if (indexStream.length === 0) {
@@ -460,7 +458,6 @@
                         codeLimit = 1 << codeSize;
                     }
                 } else {
-                    /* Table full — emit clear code and reset */
                     writeBits(clearCode, codeSize);
                     resetTable();
                 }
@@ -468,7 +465,6 @@
             }
         }
 
-        /* Write remaining */
         writeBits(table[current], codeSize);
         writeBits(eoiCode, codeSize);
         flushBits();
@@ -476,18 +472,16 @@
         return byteBuffer;
     };
 
-    /* ── Encode complete GIF89a binary ── */
     GifEncoder.encode = function (frameCanvases, options) {
         var opts = options || {};
         var loop = opts.loop !== false;
         var maxColors = opts.colors || 256;
         var dither = opts.dither || false;
-        var delay = opts.delay || 8; /* hundredths of a second */
+        var delay = opts.delay || 8;
 
         var w = frameCanvases[0].width;
         var h = frameCanvases[0].height;
 
-        /* ── Step 1: Collect pixel data from all frames for global palette ── */
         var allPixels = [];
         var frameImageData = [];
 
@@ -496,7 +490,6 @@
             var imgData = ctx.getImageData(0, 0, w, h);
             frameImageData.push(imgData);
 
-            /* Sample this frame's pixels for quantization */
             var step = Math.max(1, Math.floor(imgData.data.length / (4 * 20000)));
             for (var i = 0; i < imgData.data.length; i += 4 * step) {
                 allPixels.push(imgData.data[i]);
@@ -506,11 +499,9 @@
             }
         }
 
-        /* ── Step 2: Quantize to global palette ── */
         var result = GifEncoder.quantize(new Uint8ClampedArray(allPixels), maxColors);
         var palette = result.palette;
 
-        /* Ensure palette size is a power of 2 */
         var palBits = 1;
         while ((1 << palBits) < palette.length) palBits++;
         var palSize = 1 << palBits;
@@ -518,66 +509,55 @@
 
         var minCodeSize = Math.max(2, palBits);
 
-        /* ── Step 3: Build GIF binary ── */
         var buf = new ByteBuffer();
 
-        /* Header */
         buf.writeString('GIF89a');
 
-        /* Logical Screen Descriptor */
         buf.writeShort(w);
         buf.writeShort(h);
         var packed = 0x80 | ((palBits - 1) & 7) | (((palBits - 1) & 7) << 4);
-        buf.writeByte(packed);     /* Global color table flag + size */
-        buf.writeByte(0);          /* Background color index */
-        buf.writeByte(0);          /* Pixel aspect ratio */
+        buf.writeByte(packed);
+        buf.writeByte(0);
+        buf.writeByte(0);
 
-        /* Global Color Table */
         for (var c = 0; c < palSize; c++) {
             buf.writeByte(palette[c][0]);
             buf.writeByte(palette[c][1]);
             buf.writeByte(palette[c][2]);
         }
 
-        /* NETSCAPE2.0 Application Extension (for looping) */
         if (loop) {
-            buf.writeByte(0x21);   /* Extension introducer */
-            buf.writeByte(0xFF);   /* Application extension label */
-            buf.writeByte(11);     /* Block size */
+            buf.writeByte(0x21);
+            buf.writeByte(0xFF);
+            buf.writeByte(11);
             buf.writeString('NETSCAPE2.0');
-            buf.writeByte(3);      /* Sub-block size */
-            buf.writeByte(1);      /* Sub-block ID */
-            buf.writeShort(0);     /* Loop count (0 = infinite) */
-            buf.writeByte(0);      /* Block terminator */
+            buf.writeByte(3);
+            buf.writeByte(1);
+            buf.writeShort(0);
+            buf.writeByte(0);
         }
 
-        /* ── Step 4: Write each frame ── */
         for (var f2 = 0; f2 < frameCanvases.length; f2++) {
-            /* Graphic Control Extension */
-            buf.writeByte(0x21);   /* Extension introducer */
-            buf.writeByte(0xF9);   /* Graphic control label */
-            buf.writeByte(4);      /* Block size */
-            buf.writeByte(0x00);   /* Packed: disposal=none, no transparency */
-            buf.writeShort(delay); /* Delay (hundredths of a second) */
-            buf.writeByte(0);      /* Transparent color index (unused) */
-            buf.writeByte(0);      /* Block terminator */
+            buf.writeByte(0x21);
+            buf.writeByte(0xF9);
+            buf.writeByte(4);
+            buf.writeByte(0x00);
+            buf.writeShort(delay);
+            buf.writeByte(0);
+            buf.writeByte(0);
 
-            /* Image Descriptor */
-            buf.writeByte(0x2C);   /* Image separator */
-            buf.writeShort(0);     /* Left */
-            buf.writeShort(0);     /* Top */
-            buf.writeShort(w);     /* Width */
-            buf.writeShort(h);     /* Height */
-            buf.writeByte(0);      /* Packed: no local color table */
+            buf.writeByte(0x2C);
+            buf.writeShort(0);
+            buf.writeShort(0);
+            buf.writeShort(w);
+            buf.writeShort(h);
+            buf.writeByte(0);
 
-            /* Map pixels to indices */
             var indices = GifEncoder.indexFrame(frameImageData[f2], palette, dither);
 
-            /* LZW compress */
             buf.writeByte(minCodeSize);
             var compressed = GifEncoder.lzwEncode(indices, minCodeSize);
 
-            /* Write sub-blocks (max 255 bytes each) */
             var pos = 0;
             while (pos < compressed.length) {
                 var chunkSize = Math.min(255, compressed.length - pos);
@@ -587,16 +567,14 @@
                 }
                 pos += chunkSize;
             }
-            buf.writeByte(0); /* Block terminator */
+            buf.writeByte(0);
         }
 
-        /* GIF Trailer */
         buf.writeByte(0x3B);
 
         return buf.toUint8Array();
     };
 
-    /* Expose encoder for testing */
     VF.GifEncoder = GifEncoder;
 
 
@@ -625,7 +603,6 @@
 
                 setTimeout(function () {
                     try {
-                        /* Compute delay in hundredths of a second from FPS */
                         var delayCs = Math.round(100 / S.tl.fps);
 
                         var gifBytes = GifEncoder.encode(result.frames, {
@@ -635,14 +612,12 @@
                             delay: delayCs
                         });
 
-                        /* Convert to base64 data URL */
                         var binary = '';
                         for (var i = 0; i < gifBytes.length; i++) {
                             binary += String.fromCharCode(gifBytes[i]);
                         }
                         var dataUrl = 'data:image/gif;base64,' + btoa(binary);
 
-                        /* ── Save via Tauri or fallback ── */
                         if (window.__TAURI__) {
                             var invoke = window.__TAURI__.core.invoke;
                             var save = window.__TAURI__.dialog.save;
@@ -697,7 +672,6 @@
         var invoke = window.__TAURI__.core.invoke;
         var openDialog = window.__TAURI__.dialog.open;
 
-        /* Ask user to pick a folder */
         openDialog({
             title: 'Choose folder for PNG sequence',
             directory: true
@@ -726,7 +700,6 @@
                     while (frameNum.length < padLen) frameNum = '0' + frameNum;
                     var filename = 'frame_' + frameNum + '.png';
                     var path = folder + '/' + filename;
-                    /* Use platform separator if on Windows */
                     if (folder.indexOf('\\') > -1) path = folder + '\\' + filename;
 
                     var dataUrl = result.frames[i].toDataURL('image/png');
@@ -765,7 +738,6 @@
 
     $(document).ready(function () {
 
-        /* Sync "To" field with project end frame */
         function syncExportRange() {
             var $to = $('#export-to');
             if (+$to.val() > S.tl.max || +$to.val() < 1) {
@@ -776,26 +748,21 @@
         }
         syncExportRange();
 
-        /* Re-sync when project timing changes */
         $('#pref-end').on('change', syncExportRange);
 
-        /* Stop key events from triggering shortcuts */
         $('#export-from, #export-to, #export-sheet-cols, #export-sheet-pad')
             .on('keydown keyup keypress', function (e) { e.stopPropagation(); });
 
-        /* GIF loop toggle */
         $('#tgl-gif-loop').on('click', function () {
             VF.exportOpts.gifLoop = !VF.exportOpts.gifLoop;
             $(this).toggleClass('on', VF.exportOpts.gifLoop);
         });
 
-        /* GIF dither toggle */
         $('#tgl-gif-dither').on('click', function () {
             VF.exportOpts.gifDither = !VF.exportOpts.gifDither;
             $(this).toggleClass('on', VF.exportOpts.gifDither);
         });
 
-        /* Button handlers */
         $('#btn-export-sheet').on('click', VF.exportSpritesheet);
         $('#btn-export-gif').on('click', VF.exportGIF);
         $('#btn-export-seq').on('click', VF.exportSequence);

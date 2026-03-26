@@ -220,6 +220,10 @@
                     size: [S.canvas.w, S.canvas.h],
                     insert: false
                 });
+
+                // Tell Paper.js this path acts as the clipping mask
+                newClip.clipMask = true;
+
                 newClip.position = new P.Point(cam.x, cam.y);
                 newClip.scale(1 / cam.zoom);
                 newClip.rotate(cam.rotation);
@@ -230,7 +234,7 @@
                 VF.grainRaster.matrix = new P.Matrix();
                 var scaleX = (S.canvas.w * 1.6) / 1024 / cam.zoom;
                 var scaleY = (S.canvas.h * 1.6) / 1024 / cam.zoom;
-                VF.grainRaster.scale(Math.max(1, scaleX, scaleY));
+                VF.grainRaster.scale(Math.max(scaleX, scaleY));
                 VF.grainRaster.rotate(cam.rotation);
 
                 var rand = VF.seededRandom(f * 1234);

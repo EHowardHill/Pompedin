@@ -13,6 +13,8 @@
 
         var oz = view.zoom;
         var oc = view.center.clone();
+        // FIX (Bug #5): Save the current workspace rotation so we can restore it after export
+        var oRot = VF.viewRotation || 0;
 
         var borderRect = VF.getBorderRect();
         var borderOutline = VF.getBorderOutline();
@@ -50,6 +52,11 @@
             });
         }
 
+        /* FIX (Bug #10): Set _exporting flag so that wobble effects are applied
+           to ALL layers including the active layer during single-frame PNG export.
+           Without this flag, applyWobbleEffects() skips the active layer. */
+        VF._exporting = true;
+
         /* FIX: Re-show original layers that wobble may have hidden.
            The wobble effect hides `pl.visible = false` on layers with wobble enabled,
            replacing them with temp jittered layers. Since we hide the temp layers above,
@@ -65,6 +72,13 @@
             }
         });
 
+        // FIX (Bug #5): Reset workspace rotation before exporting so the
+        // captured image is axis-aligned. The rotation is restored afterward.
+        if (oRot) {
+            view.rotate(-oRot, view.center);
+            VF.viewRotation = 0;
+        }
+
         view.viewSize = new P.Size(S.canvas.w, S.canvas.h);
 
         /* ── Apply camera transform ── */
@@ -77,6 +91,9 @@
             view.zoom = 1;
             view.center = new P.Point(S.canvas.w / 2, S.canvas.h / 2);
         }
+
+        // FIX (Bug #10): Re-render with _exporting=true so wobble is applied
+        VF.render();
         view.update();
 
         var ec = document.createElement('canvas');
@@ -91,6 +108,9 @@
 
         var url = ec.toDataURL('image/png');
 
+        // FIX (Bug #10): Clear the exporting flag
+        VF._exporting = false;
+
         if (borderRect) borderRect.visible = true;
         if (borderOutline) borderOutline.visible = true;
         VF.onionLayerBg.visible = true;
@@ -101,12 +121,16 @@
         hiddenRefLayers.forEach(function (pl) { pl.visible = true; });
         hiddenWobble.forEach(function (tl) { tl.visible = true; });
 
-        /* ── Re-hide originals that wobble should hide (will be fixed on next render()) ── */
-        /* Actually, let render() handle the restore naturally */
-
         VF.fitCanvas();
         view.zoom = oz;
         view.center = oc;
+
+        // FIX (Bug #5): Restore workspace rotation
+        if (oRot) {
+            view.rotate(oRot, view.center);
+            VF.viewRotation = oRot;
+        }
+
         view.update();
         VF.render(); /* FIX: Trigger a full re-render to restore wobble state properly */
 

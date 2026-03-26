@@ -160,9 +160,26 @@
         return { keyFrame: prev, data: dataA };
     };
 
+    /**
+     * FIX (Bug #7): Temporarily reset the layer's matrix to Identity before
+     * serializing children, so that the layer-level transform is NOT baked
+     * into the exported coordinates. The matrix is restored immediately after.
+     * This prevents the "matrix accumulation" bug where each save/load cycle
+     * compounds the layer transform into the children's native positions.
+     */
     VF.serPL = function (pl) {
         var P = getP();
         var out = [];
+
+        // Save and temporarily reset the layer matrix so children export
+        // in their own local (un-transformed) coordinate space.
+        var savedMatrix = null;
+        var savedApplyMatrix = pl.applyMatrix;
+        if (pl.matrix && !pl.matrix.isIdentity()) {
+            savedMatrix = pl.matrix.clone();
+            pl.applyMatrix = true;   // Let Paper.js apply identity
+            pl.matrix = new P.Matrix(); // Reset to identity
+        }
 
         pl.children.forEach(function (c) {
             if (c._isH) return;
@@ -214,6 +231,12 @@
                 out.push(c.exportJSON({ asString: true }));
             }
         });
+
+        // Restore the original layer matrix
+        if (savedMatrix) {
+            pl.matrix = savedMatrix;
+            pl.applyMatrix = savedApplyMatrix;
+        }
 
         return out;
     };
@@ -297,6 +320,14 @@
                 if (targetFrame === null) return;
                 if (!l.cache) l.cache = {};
 
+                var dpr = window.devicePixelRatio || 1;
+
+                // FIX (Bug #8): Invalidate cache entry if DPR has changed
+                // since the cache was created (e.g. window moved between monitors).
+                if (l.cache[targetFrame] && l.cache[targetFrame].dpr !== dpr) {
+                    delete l.cache[targetFrame];
+                }
+
                 if (l.cache[targetFrame]) {
                     var cacheData = l.cache[targetFrame];
                     var r = new P.Raster({ canvas: cacheData.cvs });
@@ -312,8 +343,6 @@
                     VF.desPL(pl, data);
 
                     if (pl.children.length > 0) {
-                        var dpr = window.devicePixelRatio || 1;
-
                         var oldZoom = VF.view.zoom;
                         var oldCenter = VF.view.center.clone();
 

@@ -12,18 +12,22 @@
     VF._goFrameHooks = [];
 
     VF.goFrame = function (f) {
-        VF.saveFrame();
+        var al = VF.AL();
+        if (al) {
+            var res = VF.getResolvedFrame(al, S.tl.frame);
+            var derived = res && (res.isTween || res.isLoop);
+            var hasContent = VF.pLayers[al.id] && VF.pLayers[al.id].children.length > 0;
+            if (!derived && (res || hasContent)) VF.saveFrame();
+        }
+
         VF.selSegments = [];
         VF.clearHandles();
         S.tl.frame = Math.max(0, Math.min(f, S.tl.max - 1));
-
         VF.render();
         VF.updateTimelineState();
-
         if (!S.tl.playing && window.VF.playFrameAudio) {
             VF.playFrameAudio(S.tl.frame);
         }
-
         for (var i = 0; i < VF._goFrameHooks.length; i++) {
             VF._goFrameHooks[i](S.tl.frame);
         }

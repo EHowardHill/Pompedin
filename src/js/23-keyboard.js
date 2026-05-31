@@ -267,6 +267,9 @@
     $(document).on('keydown', function (e) {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
 
+        // Track Alt-combo usage so a bare Alt tap can be distinguished from Alt+X
+        if (e.altKey && e.key !== 'Alt') VF._altDirty = true;
+
         if (e.ctrlKey || e.metaKey) {
             if (e.key.toLowerCase() === 'z') { e.preventDefault(); if (e.shiftKey) VF.execRedo(); else VF.execUndo(); return; }
             if (e.key.toLowerCase() === 'y') { e.preventDefault(); VF.execRedo(); return; }
@@ -472,16 +475,12 @@
                    Plain Alt (location 0, e.g. some keyboards) → Stroke */
         if (e.key === 'Alt') {
             e.preventDefault();
-
-            if (e.repeat) return; // <--- ADD THIS LINE
-
-            if (e.location === 2) {
-                VF.pickScreenColor('#clr-fill');
-            } else {
-                VF.pickScreenColor('#clr-stroke');
-            }
+            if (!e.repeat) VF._altLocation = e.location;
             return;
         }
+        // Any non-Alt key while Alt is held means it's a combo (Alt+Tab etc.) —
+        // mark dirty so keyup won't open the eyedropper.
+        if (e.altKey) VF._altDirty = true;
 
         /* ── Bracket keys — Stroke size ──
            [  = decrease,  ]  = increase
@@ -632,6 +631,14 @@
             spaceHeld = false;
             VF.setTool(preSpaceTool || 'brush');
             preSpaceTool = null;
+        }
+        if (e.key === 'Alt') {
+            // Only open the eyedropper for a clean Alt tap (no combo like Alt+Tab)
+            if (!VF._altDirty) {
+                if (VF._altLocation === 2) VF.pickScreenColor('#clr-fill');
+                else VF.pickScreenColor('#clr-stroke');
+            }
+            VF._altDirty = false;
         }
     });
 

@@ -490,8 +490,11 @@
         gAction = null; gSaved = false; gDragged = false;
         vDragH = null; vSaved = false;
         pendingTexGroups.clear(); lastTexRebuild = 0;
+        
         if (VF.isPanInput(e.event)) return;
         if (S.tool !== 'select') return;
+        if (VF.isLocked && VF.isLocked()) { VF.toast('Layer is locked'); return; }
+
         var P = getP();
         var pl = VF.pLayers[S.activeId]; if (!pl) return;
 

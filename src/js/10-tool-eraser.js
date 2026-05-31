@@ -25,7 +25,8 @@
 
     function eraseAt(pt) {
         var pl = VF.pLayers[S.activeId]; if (!pl) return;
-        var hit = pl.hitTest(pt, { stroke: true, fill: true, bounds: true, tolerance: Math.max(S.cfg.brushSize, 6) });
+        var tol = Math.max(S.cfg.brushSize, 6);
+        var hit = VF.getValidHit(pt, pl, tol);
 
         if (hit && hit.item && !hit.item._isH) {
             if (!tEraserSaved) {

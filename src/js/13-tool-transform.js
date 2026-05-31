@@ -44,6 +44,7 @@
     tXform.onMouseDown = function (e) {
         var P = getP();
         if (VF.isPanInput(e.event)) return;
+        if (VF.isLocked && VF.isLocked()) { VF.toast('Layer is locked'); return; }
         tXformSaved = false;
         lastRebuildTime = 0;
         pendingTexGroups.clear();

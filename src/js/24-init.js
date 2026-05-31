@@ -5,7 +5,7 @@
     var P = VF.P;
     var view = VF.view;
 
-    cvs.addEventListener('mousemove', function (e) {
+    cvs.addEventListener('pointermove', function (e) {
         var rect = cvs.getBoundingClientRect();
         var vp = view.viewToProject(new P.Point(e.clientX - rect.left, e.clientY - rect.top));
         $('#cursor-info').text(Math.round(vp.x) + ', ' + Math.round(vp.y));

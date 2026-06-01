@@ -47,8 +47,39 @@
         var l = S.layers.find(function (x) { return x.id === layerId; });
         if (!l) return;
 
-        VF.ensureLayerSettings(l);
         currentLayerId = layerId;
+
+        // ── FOLDER MODE: only name + color tag are meaningful ──
+        if (VF.isFolder && VF.isFolder(l)) {
+            var kindLabel = l.kind === 'switch' ? 'Switch Folder' : 'Folder';
+            $('#ls-modal-title-prefix').text(kindLabel + ' Settings — ');
+            $('#ls-layer-name-display').text(l.name);
+            $('#ls-name').val(l.name);
+
+            $('.ls-tag').removeClass('active');
+            $('.ls-tag[data-color="' + (l.colorTag || 'none') + '"]').addClass('active');
+
+            // Hide everything that doesn't apply to a folder
+            $('#ls-row-blend').hide();
+            $('#ls-row-locked').hide();
+            $('#ls-row-reference').hide();
+            $('#ls-section-wobble').hide();
+            $('#ls-folder-note').show();
+
+            $('#modal-layer-settings').show();
+            $('#ls-name').focus().select();
+            return;
+        }
+
+        // ── LAYER MODE: full controls ──
+        VF.ensureLayerSettings(l);
+
+        $('#ls-modal-title-prefix').text('Layer Settings — ');
+        $('#ls-row-blend').show();
+        $('#ls-row-locked').show();
+        $('#ls-row-reference').show();
+        $('#ls-section-wobble').show();
+        $('#ls-folder-note').hide();
 
         $('#ls-name').val(l.name);
         $('#ls-layer-name-display').text(l.name);
@@ -87,23 +118,27 @@
         VF.saveHistory();
 
         l.name = $('#ls-name').val().trim() || l.name;
-        l.blendMode = $('#ls-blend').val();
-        l.locked = $('#ls-locked').is(':checked');
-        l.reference = $('#ls-reference').is(':checked');
 
         var activeTag = $('.ls-tag.active');
         l.colorTag = activeTag.length ? activeTag.data('color') : 'none';
 
-        l.wobble = {
-            enabled: $('#ls-wobble-on').is(':checked'),
-            offset: Math.max(0, parseFloat($('#ls-wobble-offset').val()) || 3),
-            scale: Math.max(0.1, parseFloat($('#ls-wobble-scale').val()) || 1),
-            stroke: $('#ls-wobble-stroke').is(':checked'),
-            fill: $('#ls-wobble-fill').is(':checked'),
-            perFrame: $('input[name="ls-wobble-seed"]:checked').val() === 'perFrame'
-        };
+        // Folders only carry name + color tag; skip the layer-only fields.
+        if (!(VF.isFolder && VF.isFolder(l))) {
+            l.blendMode = $('#ls-blend').val();
+            l.locked = $('#ls-locked').is(':checked');
+            l.reference = $('#ls-reference').is(':checked');
 
-        if (l.cache) l.cache = {};
+            l.wobble = {
+                enabled: $('#ls-wobble-on').is(':checked'),
+                offset: Math.max(0, parseFloat($('#ls-wobble-offset').val()) || 3),
+                scale: Math.max(0.1, parseFloat($('#ls-wobble-scale').val()) || 1),
+                stroke: $('#ls-wobble-stroke').is(':checked'),
+                fill: $('#ls-wobble-fill').is(':checked'),
+                perFrame: $('input[name="ls-wobble-seed"]:checked').val() === 'perFrame'
+            };
+
+            if (l.cache) l.cache = {};
+        }
 
         $('#modal-layer-settings').hide();
         VF.uiLayers();
@@ -237,7 +272,7 @@
             }
 
             wobblePL.insertAbove(pl);
-            wobblePL.opacity = l.opacity;
+            wobblePL.opacity = l.opacity * (VF.ancestorOpacity ? VF.ancestorOpacity(l) : 1);
             if (l.blendMode && l.blendMode !== 'normal') {
                 wobblePL.blendMode = l.blendMode;
             }

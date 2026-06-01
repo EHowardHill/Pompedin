@@ -13,7 +13,7 @@
 
         var oz = view.zoom;
         var oc = view.center.clone();
-        // FIX (Bug #5): Save the current workspace rotation so we can restore it after export
+        // Save the current workspace rotation so we can restore it after export
         var oRot = VF.viewRotation || 0;
 
         var borderRect = VF.getBorderRect();
@@ -52,12 +52,12 @@
             });
         }
 
-        /* FIX (Bug #10): Set _exporting flag so that wobble effects are applied
+        /* Set _exporting flag so that wobble effects are applied
            to ALL layers including the active layer during single-frame PNG export.
            Without this flag, applyWobbleEffects() skips the active layer. */
         VF._exporting = true;
 
-        /* FIX: Re-show original layers that wobble may have hidden.
+        /* Re-show original layers that wobble may have hidden.
            The wobble effect hides `pl.visible = false` on layers with wobble enabled,
            replacing them with temp jittered layers. Since we hide the temp layers above,
            we must restore visibility on the originals so they render in the export. */
@@ -72,7 +72,7 @@
             }
         });
 
-        // FIX (Bug #5): Reset workspace rotation before exporting so the
+        // Reset workspace rotation before exporting so the
         // captured image is axis-aligned. The rotation is restored afterward.
         if (oRot) {
             view.rotate(-oRot, view.center);
@@ -92,7 +92,7 @@
             view.center = new P.Point(S.canvas.w / 2, S.canvas.h / 2);
         }
 
-        // FIX (Bug #10): Re-render with _exporting=true so wobble is applied
+        // Re-render with _exporting=true so wobble is applied
         VF.render();
         view.update();
 
@@ -108,7 +108,7 @@
 
         var url = ec.toDataURL('image/png');
 
-        // FIX (Bug #10): Clear the exporting flag
+        // Clear the exporting flag
         VF._exporting = false;
 
         if (borderRect) borderRect.visible = true;
@@ -125,14 +125,14 @@
         view.zoom = oz;
         view.center = oc;
 
-        // FIX (Bug #5): Restore workspace rotation
+        // Restore workspace rotation
         if (oRot) {
             view.rotate(oRot, view.center);
             VF.viewRotation = oRot;
         }
 
         view.update();
-        VF.render(); /* FIX: Trigger a full re-render to restore wobble state properly */
+        VF.render(); /* Trigger a full re-render to restore wobble state properly */
 
         // TAURI IPC EXPORT LOGIC
         const { invoke } = window.__TAURI__.core;

@@ -30,6 +30,7 @@
         var nextIdx = curIdx + dir;
         if (nextIdx < 0 || nextIdx >= sorted.length) return;
         S.activeId = sorted[nextIdx].id;
+        if (VF.syncActiveSwitchPick) VF.syncActiveSwitchPick(S.activeId);
         VF.selSegments = [];
         VF.clearHandles();
         VF.uiLayers();

@@ -564,6 +564,10 @@
         if (VF._exporting) return;
         if (S.tl.playing) return;
 
+        // Activate the system foreground layer before creating the group
+        // so it doesn't accidentally inherit the active drawing layer's transform.
+        VF.fgLayer.activate();
+
         // Create an invisible grouping layer for all guides to lock them to the camera
         var guideGroup = new (getP()).Group();
         guideGroup._isH = true;
@@ -596,6 +600,9 @@
         } else {
             guideGroup.remove();
         }
+
+        // Safely restore the active drawing layer focus
+        if (VF.pLayers[S.activeId]) VF.pLayers[S.activeId].activate();
     };
 
 

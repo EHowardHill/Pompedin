@@ -15,13 +15,10 @@
         if (isSelectFamily.indexOf(t) === -1) {
             VF.selectMode = 'object';
 
-            /* FIX: Only clear selection if we're actually changing away from
-               a select-family tool. Don't clear if we're just switching between
-               non-selection tools (e.g. brush → eraser) as that would lose
-               the last selection context for when the user switches back. */
             if (isSelectFamily.indexOf(prevTool) !== -1) {
                 VF.clearHandles();
                 VF.selSegments = [];
+                if (VF.restoreBrushConfig) VF.restoreBrushConfig();
             }
         }
 
@@ -40,7 +37,7 @@
 
         var cursorMap = { brush: 'crosshair', select: 'default', lasso: 'crosshair', eraser: 'crosshair', fill: 'crosshair', 'hide-edge': 'pointer', translate: 'move', rotate: 'grab', scale: 'nwse-resize', camera: 'default', pan: 'grab', zoom: 'zoom-in', 'rotate-view': 'alias' };
 
-        // FIX: Actually apply the cursor to the canvas element.
+        // Actually apply the cursor to the canvas element.
         // Previously the cursorMap was defined but never used.
         cvs.style.cursor = cursorMap[t] || 'default';
 

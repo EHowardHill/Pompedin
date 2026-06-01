@@ -41,7 +41,7 @@
         var origFrame = S.tl.frame;
         var origZoom = VF.view.zoom;
         var origCenter = VF.view.center.clone();
-        // FIX (Bug #5): Save workspace rotation
+        // Save workspace rotation
         var origRotation = VF.viewRotation || 0;
 
         /* ── Hide UI elements ── */
@@ -75,7 +75,7 @@
             });
         }
 
-        // FIX (Bug #5): Reset workspace rotation before rendering export frames
+        // Reset workspace rotation before rendering export frames
         if (origRotation) {
             VF.view.rotate(-origRotation, VF.view.center);
             VF.viewRotation = 0;
@@ -148,7 +148,7 @@
         VF.view.zoom = origZoom;
         VF.view.center = origCenter;
 
-        // FIX (Bug #5): Restore workspace rotation
+        // Restore workspace rotation
         if (origRotation) {
             VF.view.rotate(origRotation, VF.view.center);
             VF.viewRotation = origRotation;

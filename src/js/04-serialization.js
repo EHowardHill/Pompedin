@@ -273,10 +273,24 @@
         var pl = VF.pLayers[l.id]; if (!pl) return;
 
         var res = VF.getResolvedFrame(l, S.tl.frame);
-        var targetFrame = (res && !res.isTween) ? res.keyFrame : S.tl.frame;
+        var isDerived = res && (res.isTween || res.isLoop);
 
         if (l.type === 'vector') {
-            l.frames[targetFrame] = VF.serPL(pl);
+            var newData = VF.serPL(pl);
+
+            // GUARD: don't let a rasterized-cache paper layer (bare Raster,
+            // which serPL can't serialize) overwrite real frame data with [].
+            if (newData.length === 0 && pl.children.length > 0) return;
+
+            if (isDerived && l.frames[S.tl.frame] === undefined) {
+                if (JSON.stringify(newData) === JSON.stringify(res.data)) {
+                    return;
+                }
+            }
+
+            var targetFrame = (res && !isDerived) ? res.keyFrame : S.tl.frame;
+            l.frames[targetFrame] = newData;
+
             if (!l.cache) l.cache = {};
 
             if (l.tweens && Object.keys(l.tweens).length > 0) l.cache = {};
@@ -284,7 +298,18 @@
 
         } else if (l.type === 'image') {
             var r = pl.children.find(function (c) { return c.className === 'Raster'; });
-            l.frames[targetFrame] = r ? { matrix: r.matrix.values } : [];
+            var newImgData = r ? { matrix: r.matrix.values } : [];
+
+            // Apply the same guard for image layers
+            if (isDerived && l.frames[S.tl.frame] === undefined) {
+                if (JSON.stringify(newImgData) === JSON.stringify(res.data)) {
+                    return;
+                }
+            }
+
+            var targetFrameImg = (res && !isDerived) ? res.keyFrame : S.tl.frame;
+            l.frames[targetFrameImg] = newImgData;
+
             if (l.tweens && Object.keys(l.tweens).length > 0) l.cache = {};
         }
     };
@@ -309,7 +334,7 @@
 
                 var dpr = window.devicePixelRatio || 1;
 
-                // FIX (Bug #8): Invalidate cache entry if DPR has changed
+                // Invalidate cache entry if DPR has changed
                 // since the cache was created (e.g. window moved between monitors).
                 if (l.cache[targetFrame] && l.cache[targetFrame].dpr !== dpr) {
                     delete l.cache[targetFrame];

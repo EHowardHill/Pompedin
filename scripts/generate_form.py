@@ -51,6 +51,8 @@ file_list = [
     base + "src/js/33-tools-advanced.js",
     base + "src/js/34-camera.js",
     base + "src/js/35-onion-timeline.js",
+    base + "src/js/36-shortcuts.js",
+    base + "src/js/37-folders.js"
 ]
 
 for file in file_list:

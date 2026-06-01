@@ -41,9 +41,54 @@
        updates the ribbon controls to match.
        ═══════════════════════════════════════════════════ */
 
+    var _cachedBrushConfig = null;
+
+    VF.cacheBrushConfig = function () {
+        if (!_cachedBrushConfig) {
+            _cachedBrushConfig = {
+                brushSize: S.cfg.brushSize,
+                strokeCol: S.cfg.strokeCol,
+                autoStroke: S.cfg.autoStroke,
+                fillCol: S.cfg.fillCol,
+                autoFill: S.cfg.autoFill,
+                tex: S.cfg.tex
+            };
+        }
+    };
+
+    VF.restoreBrushConfig = function () {
+        if (_cachedBrushConfig) {
+            S.cfg.brushSize = _cachedBrushConfig.brushSize;
+            S.cfg.strokeCol = _cachedBrushConfig.strokeCol;
+            S.cfg.autoStroke = _cachedBrushConfig.autoStroke;
+            S.cfg.fillCol = _cachedBrushConfig.fillCol;
+            S.cfg.autoFill = _cachedBrushConfig.autoFill;
+            S.cfg.tex = _cachedBrushConfig.tex;
+
+            // Sync UI back to freehand defaults
+            $('#rng-brush').val(S.cfg.brushSize);
+            $('#v-brush').val(S.cfg.brushSize);
+            $('#clr-stroke').val(S.cfg.strokeCol);
+            $('#tgl-stroke').toggleClass('on', S.cfg.autoStroke);
+            $('#clr-fill').val(S.cfg.fillCol);
+            $('#tgl-fill').toggleClass('on', S.cfg.autoFill);
+            $('#sel-tex').val(S.cfg.tex);
+
+            _cachedBrushConfig = null;
+        }
+    };
+
     VF.syncUIFromSelection = function () {
         var items = VF.getSelectedItems();
-        if (items.length === 0) return;
+
+        // Restore brush defaults if the selection was cleared
+        if (items.length === 0) {
+            if (VF.restoreBrushConfig) VF.restoreBrushConfig();
+            return;
+        }
+
+        // Cache the freehand brush config before the selection overrides it
+        if (VF.cacheBrushConfig) VF.cacheBrushConfig();
 
         var item = items[0];
 

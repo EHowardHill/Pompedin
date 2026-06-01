@@ -77,6 +77,10 @@
             var z = VF.view.zoom;
             var revealHL = hitItem.clone({ insert: true });
             revealHL._isH = true;
+
+            // Reset blendMode to normal in case the hit item was a destination-out mask
+            revealHL.blendMode = 'normal';
+
             revealHL.strokeColor = new P.Color(0.2, 0.8, 0.4, 0.7);
             revealHL.strokeWidth = (hitItem.strokeWidth + 4) / z;
             revealHL.dashArray = [5 / z, 3 / z];
@@ -88,7 +92,7 @@
             return true;
         }
 
-        /* ── HIDE MODE: create bg-colored overlay ── */
+        /* ── HIDE MODE: create bg-colored overlay or eraser mask ── */
         if (hit.type !== 'stroke' || !hit.location) return false;
         if (isOverlay) return false;
 
@@ -110,14 +114,26 @@
             insertTarget = insertTarget.parent;
         }
 
+        // Check workspace transparency
+        var isTransparent = VF.wsPrefs && VF.wsPrefs.canvasBgTransparent;
         var bgColor = getBgColor();
+
         var overlay = new P.Path();
         overlay.add(new P.Segment(curve.point1, null, curve.handle1));
         overlay.add(new P.Segment(curve.point2, curve.handle2, null));
-        overlay.strokeColor = bgColor;
+
         overlay.strokeCap = 'round';
         overlay.strokeWidth = Math.max(path.strokeWidth + 3, path.strokeWidth * 1.3);
         overlay.data = { isHiddenEdge: true };
+
+        // Apply destination-out blending if transparent, otherwise use standard background painting
+        if (isTransparent) {
+            overlay.strokeColor = '#000000'; // Color doesn't matter, opacity does
+            overlay.blendMode = 'destination-out';
+        } else {
+            overlay.strokeColor = bgColor;
+        }
+
         overlay.insertAbove(insertTarget);
 
         /* Brief orange highlight */
@@ -125,6 +141,10 @@
         var z2 = VF.view.zoom;
         var highlight = overlay.clone({ insert: true });
         highlight._isH = true;
+
+        // Reset blendMode so the highlight is actually visible
+        highlight.blendMode = 'normal';
+
         highlight.strokeColor = new P.Color(1, 0.5, 0.2, 0.6);
         highlight.strokeWidth = (path.strokeWidth + 6) / z2;
         highlight.dashArray = [6 / z2, 4 / z2];

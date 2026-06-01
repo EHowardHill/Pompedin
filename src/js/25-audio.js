@@ -198,7 +198,7 @@
         var audioFrames = A.waveformData ? A.waveformData.length : 0;
         var displayFrames = Math.max(S.tl.max, audioFrames);
 
-        // FIX: Prevent the "Sad Face" Canvas OOM Crash
+        // Prevent the "Sad Face" Canvas OOM Crash
         // Browsers kill canvases that exceed ~32,000 physical pixels in width.
         var maxSafePixels = 30000;
         var maxSafeFrames = Math.floor(maxSafePixels / (cellW * dpr));

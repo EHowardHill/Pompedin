@@ -13,7 +13,7 @@
 
     VF.goFrame = function (f) {
         var al = VF.AL();
-        if (al) {
+        if (al && !VF.isFolder(al)) {
             var res = VF.getResolvedFrame(al, S.tl.frame);
             var derived = res && (res.isTween || res.isLoop);
             var hasContent = VF.pLayers[al.id] && VF.pLayers[al.id].children.length > 0;
@@ -23,8 +23,10 @@
         VF.selSegments = [];
         VF.clearHandles();
         S.tl.frame = Math.max(0, Math.min(f, S.tl.max - 1));
+        var switchFollowed = VF.followSwitchOnFrame ? VF.followSwitchOnFrame(S.tl.frame) : false;
         VF.render();
         VF.updateTimelineState();
+        if (switchFollowed && !S.tl.playing) VF.uiLayers();
         if (!S.tl.playing && window.VF.playFrameAudio) {
             VF.playFrameAudio(S.tl.frame);
         }
@@ -43,6 +45,8 @@
             S.tl.playing = false;
             $('#btn-play').text('▶');
             if (window.VF.stopAudio) VF.stopAudio();
+            if (VF.followSwitchOnFrame) VF.followSwitchOnFrame(S.tl.frame);
+            VF.uiLayers();
         } else {
             // Start playback
             S.tl.playing = true;
@@ -73,7 +77,7 @@
                 // Handle looping logic
                 if (expectedFrame >= maxFrames) {
                     expectedFrame = 0;
-                    // FIX: Check A.buffer (audio track exists) rather than
+                    // Check A.buffer (audio track exists) rather than
                     // A.buffer && A.isPlaying. When the audio's BufferSourceNode
                     // reaches the end of its buffer, its onended callback fires
                     // and sets A.isPlaying = false BEFORE the animation loop
@@ -96,6 +100,7 @@
                     var nextN = expectedFrame + 1 >= maxFrames ? 0 : expectedFrame + 1;
                     requestIdleCallback(function () {
                         S.layers.forEach(function (layer) {
+                            if (VF.isFolder(layer)) return;
                             if (layer.id !== S.activeId && layer.type === 'vector' && layer.vis) {
                                 var res = VF.getResolvedFrame(layer, nextN);
                                 if (res && (!layer.cache || !layer.cache[res.keyFrame])) {
@@ -177,28 +182,48 @@
         var TAG_COLORS = VF.TAG_COLORS || {};
         var lh = '';
 
-        // NEW: Inject a 16px spacer to perfectly mirror the timeline ruler on the right
+        // Inject a 16px spacer to perfectly mirror the timeline ruler on the right
         lh += '<div style="height: 16px; position: sticky; top: 0; background: var(--bg-panel); z-index: 11; border-bottom: 1px solid var(--border);"></div>';
 
         // Audio goes first to match #tl-audio-row sitting above #tl-rows
         lh += '<div class="tl-audio-label"><i class="fa-solid fa-music"></i> Audio</div>';
         if (VF.buildCameraTimelineLabel) lh += VF.buildCameraTimelineLabel();
 
-        [].concat(S.layers).sort(function (a, b) { return b.z - a.z; }).forEach(function (l) {
+        // ── Tree-ordered labels (folders + layers, top-first, respecting collapse) ──
+        VF.visibleTree().forEach(function (n) {
+            var l = n.item, ind = n.depth * 12;
+
+            if (VF.isFolder(l)) {
+                var fic = l.kind === 'switch' ? '⇄ ' : '📁 ';
+                lh += '<div class="tl-llbl tl-folder-lbl" data-l="' + l.id + '" style="padding-left:' + (6 + ind) + 'px">' + fic + l.name + '</div>';
+                return;
+            }
+
             var icon = l.type === 'image' ? '🖼 ' : '';
             var tag = l.colorTag || 'none';
-            var tagStyle = tag !== 'none' && TAG_COLORS[tag] ? ' data-tag="' + tag + '" style="--tag-color:' + TAG_COLORS[tag] + '"' : '';
+            var hasTag = tag !== 'none' && TAG_COLORS[tag];
+            var lblStyle = 'padding-left:' + (6 + ind) + 'px;' + (hasTag ? '--tag-color:' + TAG_COLORS[tag] + ';' : '');
+            var tagAttr = hasTag ? ' data-tag="' + tag + '"' : '';
 
             // Frame keys track
-            lh += '<div class="tl-llbl"' + tagStyle + '>' + icon + l.name + '</div>';
+            lh += '<div class="tl-llbl"' + tagAttr + ' style="' + lblStyle + '">' + icon + l.name + '</div>';
             // Tween transforms track
-            lh += '<div class="tl-llbl" style="background:var(--bg-hover); padding-left:20px; font-size:9px; color:var(--text-dim); border-left: 3px solid transparent">↳ Transform</div>';
+            lh += '<div class="tl-llbl" style="background:var(--bg-hover); padding-left:' + (20 + ind) + 'px; font-size:9px; color:var(--text-dim); border-left: 3px solid transparent">↳ Transform</div>';
         });
         $('#tl-labels').html(lh);
 
         var rows = '';
         if (VF.buildCameraTimelineRow) rows += VF.buildCameraTimelineRow();
-        [].concat(S.layers).sort(function (a, b) { return b.z - a.z; }).forEach(function (l) {
+
+        // ── Tree-ordered rows (folders emit their own row type) ──
+        VF.visibleTree().forEach(function (n) {
+            var l = n.item;
+
+            // Folder rows: switch folders get a switch-key track, normal folders an empty spacer row
+            if (VF.isFolder(l)) {
+                rows += (l.kind === 'switch') ? VF.buildSwitchRow(l) : VF.buildFolderRow(l);
+                return;
+            }
 
             // Frame Cells
             var cells = '';
@@ -320,6 +345,14 @@
         var $dotCtx = $('#dot-ctx');
 
         $tlRows.on('click', '.tl-cell', function (e) {
+            // Folder rows (normal or switch) just scrub the playhead.
+            // Switch-key dots are handled by their own handler in 37-folders.js.
+            var _lid = $(this).data('l');
+            if (_lid !== '__camera' && VF.getItem) {
+                var _li = VF.getItem(+_lid);
+                if (_li && VF.isFolder(_li)) { VF.goFrame(+$(this).data('f')); return; }
+            }
+
             if (_wasMarqueeDragging) return; // Block click if we just finished drawing a selection box
             if (e.button !== 0) return;
 
@@ -349,6 +382,12 @@
                         var rl = $row.data('l');
                         var rtype = $row.data('type') || 'draw';
 
+                        // Skip folder rows during range selection
+                        if (rl !== '__camera' && VF.getItem) {
+                            var rli = VF.getItem(+rl);
+                            if (rli && VF.isFolder(rli)) continue;
+                        }
+
                         for (var frame = minF; frame <= maxF; frame++) {
                             // Verify keyframe exists
                             var isValid = false;
@@ -356,7 +395,7 @@
                                 isValid = VF.S.camera && VF.S.camera.frames[frame] !== undefined;
                             } else {
                                 var lyr = VF.S.layers.find(function (x) { return x.id === rl; });
-                                if (lyr) {
+                                if (lyr && !VF.isFolder(lyr)) {
                                     if (rtype === 'transform') isValid = lyr.transforms && lyr.transforms[frame] !== undefined;
                                     else isValid = lyr.frames[frame] !== undefined;
                                 }
@@ -375,7 +414,7 @@
 
             // Ctrl/Cmd+Click: Toggle Selection
             if (e.ctrlKey || e.metaKey) {
-                // FIX (Bug #6): Only allow Ctrl+Click toggle if there's actually
+                // Only allow Ctrl+Click toggle if there's actually
                 // a keyframe dot present. Without this check, clicking on empty
                 // cells would add phantom selections to VF.tlSelection.
                 if ($dot.length === 0) return;
@@ -412,6 +451,13 @@
             e.preventDefault(); e.stopPropagation();
             var cellL = $(this).data('l');
             if (cellL === '__camera') return; // Handled by camera's own context menu
+
+            // Folder rows: no frame context menu (switch dots handle their own in 37-folders.js)
+            if (VF.getItem) {
+                var cellItem = VF.getItem(+cellL);
+                if (cellItem && VF.isFolder(cellItem)) return;
+            }
+
             S.tl.frame = +$(this).data('f');
             VF.render(); VF.uiPlayhead();
             showCtx(e.clientX, e.clientY, +cellL, +$(this).data('f'), $(this).data('type'));
@@ -423,7 +469,7 @@
             var act = $(this).data('act');
             if (ctxL === '__camera') { $dotCtx.hide(); return; }
             var layer = S.layers.find(function (x) { return x.id === ctxL; });
-            if (!layer) return;
+            if (!layer || VF.isFolder(layer)) { $dotCtx.hide(); return; }
 
             var res = VF.getResolvedFrame(layer, ctxF);
             if (!layer.cache) layer.cache = {};
@@ -597,10 +643,18 @@
             // Pre-calculate row vertical bounds for extreme performance
             $('.tl-row').each(function () {
                 var r = this.getBoundingClientRect();
+                var rl = $(this).data('l');
+
+                // Skip folder rows so marquee selection can't grab switch/folder cells
+                if (rl !== '__camera' && VF.getItem) {
+                    var rli = VF.getItem(+rl);
+                    if (rli && VF.isFolder(rli)) return;
+                }
+
                 marqueeDrag.rowsInfo.push({
                     top: r.top,
                     bottom: r.bottom,
-                    l: $(this).data('l'),
+                    l: rl,
                     type: $(this).data('type') || 'draw'
                 });
             });
@@ -656,7 +710,7 @@
                                     isValid = VF.S.camera && VF.S.camera.frames[f] !== undefined;
                                 } else {
                                     var lyr = VF.S.layers.find(function (x) { return x.id === r.l; });
-                                    if (lyr) {
+                                    if (lyr && !VF.isFolder(lyr)) {
                                         if (r.type === 'transform') isValid = lyr.transforms && lyr.transforms[f] !== undefined;
                                         else isValid = lyr.frames[f] !== undefined;
                                     }
@@ -715,6 +769,15 @@
                     if (tType !== tlDrag.type) $targetCell = $();
                 }
 
+                // Reject drops onto folder/switch rows
+                if ($targetCell.length) {
+                    var tcl = $targetCell.data('l');
+                    if (tcl !== '__camera' && VF.getItem) {
+                        var tcli = VF.getItem(+tcl);
+                        if (tcli && VF.isFolder(tcli)) $targetCell = $();
+                    }
+                }
+
                 if ($targetCell.length) {
                     var tf = +$targetCell.data('f');
                     var tl = $targetCell.data('l');
@@ -724,7 +787,10 @@
                         var df = tf - tlDrag.f;
                         var dl = 0;
 
-                        var sortedLayers = [].concat(S.layers).sort(function (a, b) { return b.z - a.z; });
+                        // Drawable-only ordering so folder rows don't offset the layer math
+                        var sortedLayers = VF.flattenDrawables
+                            ? VF.flattenDrawables().slice().reverse()
+                            : [].concat(S.layers).sort(function (a, b) { return b.z - a.z; });
                         if (tl !== '__camera' && tlDrag.l !== '__camera') {
                             var srcIdx = sortedLayers.findIndex(function (x) { return x.id === tlDrag.l; });
                             var tgtIdx = sortedLayers.findIndex(function (x) { return x.id === tl; });
@@ -812,7 +878,9 @@
             } else {
                 if (tlDrag.targetCell && !tlDrag.invalid) {
                     VF.saveHistory();
-                    var sortedLayers = [].concat(S.layers).sort(function (a, b) { return b.z - a.z; });
+                    var sortedLayers = VF.flattenDrawables
+                        ? VF.flattenDrawables().slice().reverse()
+                        : [].concat(S.layers).sort(function (a, b) { return b.z - a.z; });
                     var df = tlDrag.dropDelta.df;
                     var dl = tlDrag.dropDelta.dl;
 
@@ -869,6 +937,7 @@
 
                     // Reload active frame for all layers since underlying data shifted
                     S.layers.forEach(function (lyr) {
+                        if (VF.isFolder(lyr)) return;
                         VF.loadFrame(lyr.id, S.tl.frame);
                     });
                 }

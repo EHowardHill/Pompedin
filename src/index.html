@@ -619,27 +619,27 @@
         </div>
 
         <div id="left-tools">
-            <button class="tb tb-sidebar active" data-tool="select" data-tip="Select / Edit Vertices (V)">
+            <button class="tb tb-sidebar active" data-tool="select" data-tip="Select / Edit Vertices (T)">
                 <i class="fa-solid fa-arrow-pointer"></i><span>Select</span>
             </button>
-            <button class="tb tb-sidebar" data-tool="brush" data-tip="Brush (B)">
+            <button class="tb tb-sidebar" data-tool="brush" data-tip="Brush (F)">
                 <i class="fa-solid fa-paintbrush"></i><span>Brush</span>
             </button>
-            <button class="tb tb-sidebar" data-tool="lasso" data-tip="Lasso Select (L)">
+            <button class="tb tb-sidebar" data-tool="lasso" data-tip="Lasso Select (G)">
                 <i class="fa-solid fa-draw-polygon"></i><span>Lasso</span>
             </button>
             <button class="tb tb-sidebar" data-tool="eraser" data-tip="Eraser (E)">
                 <i class="fa-solid fa-eraser"></i><span>Eraser</span>
             </button>
             <div class="div-v"></div>
-            <button class="tb tb-sidebar" data-tool="fill" data-tip="Paint Bucket (G)">
+            <button class="tb tb-sidebar" data-tool="fill" data-tip="Paint Bucket (P)">
                 <i class="fa-solid fa-fill-drip"></i><span>Fill</span>
             </button>
             <button class="tb tb-sidebar" data-tool="hide-edge" data-tip="Hide Edge (H)">
                 <i class="fa-solid fa-eye-slash"></i><span>Hide Edge</span>
             </button>
             <div class="div-v"></div>
-            <button class="tb tb-sidebar" data-tool="translate" data-tip="Translate Layer (T)">
+            <button class="tb tb-sidebar" data-tool="translate" data-tip="Translate Layer (M)">
                 <i class="fa-solid fa-arrows-up-down-left-right"></i><span>Translate</span>
             </button>
             <button class="tb tb-sidebar" data-tool="rotate" data-tip="Rotate Layer (R)">
@@ -649,17 +649,17 @@
                 <i class="fa-solid fa-expand"></i><span>Scale</span>
             </button>
             <div class="div-v"></div>
-            <button class="tb tb-sidebar" data-tool="camera" data-tip="Camera Tool (C)">
+            <button class="tb tb-sidebar" data-tool="camera" data-tip="Camera Tool (4)">
                 <i class="fa-solid fa-video"></i><span>Camera</span>
             </button>
             <div class="div-v"></div>
             <button class="tb tb-sidebar" data-tool="zoom" data-tip="Zoom (Z / Scroll)">
                 <i class="fa-solid fa-magnifying-glass"></i><span>Zoom</span>
             </button>
-            <button class="tb tb-sidebar" data-tool="rotate-view" data-tip="Rotate Workspace (Shift+R)">
+            <button class="tb tb-sidebar" data-tool="rotate-view" data-tip="Rotate Workspace (8)">
                 <i class="fa-solid fa-rotate"></i><span>Rotate View</span>
             </button>
-            <button class="tb tb-sidebar" id="btn-resetview" data-tip="Reset View">
+            <button class="tb tb-sidebar" id="btn-resetview" data-tip="Reset View (Home)">
                 <i class="fa-solid fa-compress"></i><span>Reset View</span>
             </button>
             <button class="tb tb-sidebar" id="btn-fitscreen" data-tip="Fit to Screen (Ctrl+0)">
@@ -699,6 +699,10 @@
                             style="width:22px;height:22px;font-size:13px;color:var(--warning)" title="Delete">×</button>
                         <button class="tb" id="btn-imglyr" style="width:22px;height:22px;font-size:11px"
                             title="Import Image">🖼</button>
+                        <button class="tb" id="btn-newfolder" style="width:22px;height:22px;font-size:11px"
+                            title="New Folder">📁</button>
+                        <button class="tb" id="btn-newswitch" style="width:22px;height:22px;font-size:11px"
+                            title="New Switch">⇄</button>
                         <button class="tb" id="btn-lyrsettings" style="width:22px;height:22px;font-size:11px"
                             title="Layer Settings">⚙</button>
                     </div>
@@ -750,7 +754,8 @@
 
     <div id="modal-layer-settings" class="mo-ov" style="display:none">
         <div class="mo-box" style="min-width:420px;max-width:500px">
-            <div class="mo-title">Layer Settings — <span id="ls-layer-name-display" style="color:var(--accent)"></span>
+            <div class="mo-title"><span id="ls-modal-title-prefix">Layer Settings — </span><span
+                    id="ls-layer-name-display" style="color:var(--accent)"></span>
             </div>
 
             <div class="ls-section">
@@ -759,7 +764,7 @@
                     <label>Name</label>
                     <input id="ls-name" type="text" style="width:180px">
                 </div>
-                <div class="mo-row">
+                <div class="mo-row" id="ls-row-blend">
                     <label>Blend Mode</label>
                     <select id="ls-blend">
                         <option value="normal">Normal</option>
@@ -780,11 +785,11 @@
                         <option value="color">Color</option>
                     </select>
                 </div>
-                <div class="ls-check-row">
+                <div class="ls-check-row" id="ls-row-locked">
                     <label><input type="checkbox" id="ls-locked"> Lock Layer
                         <span class="ls-check-hint">— prevents drawing &amp; erasing</span></label>
                 </div>
-                <div class="ls-check-row">
+                <div class="ls-check-row" id="ls-row-reference">
                     <label><input type="checkbox" id="ls-reference"> Reference Only
                         <span class="ls-check-hint">— excluded from PNG &amp; MP4 export</span></label>
                 </div>
@@ -803,7 +808,7 @@
                 </div>
             </div>
 
-            <div class="ls-section">
+            <div class="ls-section" id="ls-section-wobble">
                 <div class="ls-section-title">Sketch Wobble</div>
                 <div class="ls-check-row" style="margin-bottom:10px">
                     <label><input type="checkbox" id="ls-wobble-on"> Enable Wobble
@@ -1219,6 +1224,7 @@
     <script src="js/34-camera.js"></script>
     <script src="js/35-onion-timeline.js"></script>
     <script src="js/36-shortcuts.js"></script>
+    <script src="js/37-folders.js"></script>
 </body>
 </body>
 

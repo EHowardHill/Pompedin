@@ -148,6 +148,10 @@
         if (S.tl.playing) VF.togglePlay();
         if (S.tool !== 'brush') return;
         var l = VF.AL(); if (!l || l.type !== 'vector') return;
+        if (VF.isHiddenBySwitch && VF.isHiddenBySwitch(l, S.tl.frame)) {
+            VF.toast('Layer hidden by switch — click its ◉ to show it on this frame');
+            return;
+        }
         var pl = VF.pLayers[l.id]; if (!pl) return;
 
         // Convert project/camera space point to the layer's local transformed space

@@ -16,7 +16,18 @@
             // Because render() sets `pl.applyMatrix = false`, the layer-level
             // transform matrix is never baked into children's coordinates,
             // so no matrix reset/restore is needed during serialization.
-            l.frames[targetFrame] = VF.serPL(VF.pLayers[l.id]);
+            var pl = VF.pLayers[l.id];
+            var serialized = VF.serPL(pl);
+
+            // GUARD: a non-active vector layer is shown as a single rasterized
+            // cache (a bare Raster). serPL can't serialize a Raster, so it
+            // returns []. Writing that would wipe the real frame data. This
+            // happens when a layer is made active (e.g. picking a switch child)
+            // and saveHistory() runs before the layer is re-rendered from data.
+            // Children present + nothing serializable === cache state → keep data.
+            if (serialized.length === 0 && pl.children.length > 0) return;
+
+            l.frames[targetFrame] = serialized;
         } else if (l.type === 'image') {
             // Image rasters track their own local matrices, independent 
             // of the parent layer's transform, so this avoids the baking loop naturally.
@@ -35,8 +46,11 @@
      * which silently empties the layer and poisons redo snapshots.
      */
     function snapshotLayers() {
-        S.layers.forEach(function (l) { l.cache = {}; });
-        return JSON.stringify(S.layers);
+        return JSON.stringify(S.layers, function (key, value) {
+            // Strip caches from the serialized payload without mutating live objects
+            if (key === 'cache') return {};
+            return value;
+        });
     }
 
     VF.saveHistory = function () {
@@ -60,12 +74,15 @@
         for (var k in VF.pLayers) delete VF.pLayers[k];
 
         S.layers.forEach(function (l) {
+            if (VF.isFolder(l)) return;
+            l.cache = {};
             var pl = new P.Layer(); pl.name = 'L' + l.id;
             VF.pLayers[l.id] = pl;
         });
 
         if (!S.layers.find(function (l) { return l.id === S.activeId; })) {
-            S.activeId = S.layers[0] ? S.layers[0].id : 1;
+            var d = S.layers.find(function (l) { return !VF.isFolder(l); });
+            S.activeId = d ? d.id : (S.layers[0] ? S.layers[0].id : 1);
         }
 
         VF.uiLayers();

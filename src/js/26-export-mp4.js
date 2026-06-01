@@ -44,7 +44,7 @@
         var originalFrame = S.tl.frame;
         var originalZoom = VF.view.zoom;
         var originalCenter = VF.view.center.clone();
-        // FIX (Bug #5): Save workspace rotation
+        // Save workspace rotation
         var originalRotation = VF.viewRotation || 0;
 
         // Hide system layers (canvas borders, onion skins, etc.)
@@ -79,7 +79,7 @@
             });
         }
 
-        // FIX (Bug #5): Reset workspace rotation before export
+        // Reset workspace rotation before export
         if (originalRotation) {
             VF.view.rotate(-originalRotation, VF.view.center);
             VF.viewRotation = 0;
@@ -201,7 +201,7 @@
             VF.view.zoom = originalZoom;
             VF.view.center = originalCenter;
 
-            // FIX (Bug #5): Restore workspace rotation
+            // Restore workspace rotation
             if (originalRotation) {
                 VF.view.rotate(originalRotation, VF.view.center);
                 VF.viewRotation = originalRotation;

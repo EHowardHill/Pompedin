@@ -129,7 +129,6 @@
 
             S.tl.frame = 0;
             S.nextId = 1;
-            VF.undoStack = []; VF.redoStack = [];
 
             // Reset per-project configurations
             S.canvas = { w: 800, h: 600 };
@@ -145,7 +144,13 @@
 
             VF.updateWindowTitle();
             VF.syncPrefsUI();
+
             VF.addLayer('Layer 1', 'vector');
+
+            // Clear history AFTER seeding the layer so we don't snapshot a 0-layer state
+            VF.undoStack = [];
+            VF.redoStack = [];
+
             VF.resetView();
             VF.render();
             VF.uiTimeline();
@@ -154,8 +159,8 @@
     });
 
     /* ═══════════════════════════════════════════════════
-       LOAD PROJECT — native open dialog
-       ═══════════════════════════════════════════════════ */
+           LOAD PROJECT — native open dialog
+           ═══════════════════════════════════════════════════ */
     $('#btn-load').on('click', function () {
         var invoke = window.__TAURI__.core.invoke;
         var open = window.__TAURI__.dialog.open;
@@ -176,7 +181,11 @@
                 S.tl = state.tl || S.tl;
                 S.activeId = state.activeId || (state.layers && state.layers.length > 0 ? state.layers[0].id : 1);
                 S.nextId = state.nextId || S.nextId;
-                S.cfg = state.cfg || S.cfg;
+
+                // Deep merge the loaded config over the current defaults
+                // This ensures newly introduced keys in the current build survive
+                S.cfg = $.extend(true, {}, S.cfg, state.cfg || {});
+
                 S.onions = state.onions || S.onions;
 
                 // Restore Audio from project

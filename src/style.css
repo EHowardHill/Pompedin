@@ -1818,3 +1818,26 @@ input[type="range"]::-webkit-slider-thumb {
     box-shadow: none;
     transform: translateY(1px);
 }
+
+.layer-item.drag-into {
+    box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.tl-sw-dot {
+    position: absolute;
+    left: 5px;
+    top: 5px;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    background: var(--accent);
+    border: 1px solid #fff;
+}
+
+.tl-switch-row {
+    background: var(--bg-hover);
+}
+
+.tl-folder-lbl {
+    font-weight: 600;
+}

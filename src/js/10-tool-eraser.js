@@ -48,7 +48,7 @@
                 }
             }
 
-            /* FIX: Remove stale segment references from VF.selSegments
+            /* Remove stale segment references from VF.selSegments
                before destroying the item. This prevents crashes when
                the select tool later tries to operate on deleted segments. */
             if (VF.selSegments.length > 0) {
@@ -81,7 +81,7 @@
     tEraser.onMouseUp = function (e) {
         if (VF.isPanInput(e.event)) return;
 
-        /* FIX: Refresh handles after erasing to prevent ghost gizmos */
+        /* Refresh handles after erasing to prevent ghost gizmos */
         if (VF.selSegments.length > 0) {
             VF.showHandles();
         } else {

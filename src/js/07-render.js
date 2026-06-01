@@ -36,20 +36,19 @@
         VF.onionLayerBg.removeChildren();
         VF.onionLayerFg.removeChildren();
 
-        var sorted = [].concat(S.layers).sort(function (a, b) { return a.z - b.z; });
+        var sorted = VF.flattenDrawables();   // drawables only, back -> front
         sorted.forEach(function (l, i) {
             if (VF.ensureLayerSettings) VF.ensureLayerSettings(l);
-
             var pl = VF.pLayers[l.id]; if (!pl) return;
-            pl.visible = l.vis;
-
+            pl.visible = VF.isLayerRenderable(l, f);   // <-- was l.vis
             VF.loadFrame(l.id, f);
 
+            var groupMult = VF.ancestorOpacity ? VF.ancestorOpacity(l) : 1;
             if (l.type === 'image') {
                 pl.opacity = 1;
-                pl.children.forEach(function (c) { c.opacity = l.opacity; });
+                pl.children.forEach(function (c) { c.opacity = l.opacity * groupMult; });
             } else {
-                pl.opacity = l.opacity;
+                pl.opacity = l.opacity * groupMult;
             }
 
             if (VF.applyBlendMode) VF.applyBlendMode(l, pl);
@@ -64,7 +63,7 @@
                 m.scale(xf.scaleX, xf.scaleY);
                 m.translate(-cx, -cy);
 
-                // IMPORTANT FIX: Prevent Paper.js from baking this transform into the children's 
+                // IMPORTANT Prevent Paper.js from baking this transform into the children's 
                 // native coordinates, which causes the timeline accumulation bug.
                 pl.applyMatrix = false;
                 pl.matrix = m;
@@ -93,8 +92,8 @@
 
                 var skinOpacity = skin.op / 100;
 
-                S.layers.forEach(function (l) {
-                    if (!l.vis) return;
+                VF.flattenDrawables().forEach(function (l) {
+                    if (!VF.isLayerRenderable(l, targetF)) return;
                     if (S.cfg.onionIsolate && l.id !== S.activeId) return;
 
                     var res = VF.getResolvedFrame(l, targetF);

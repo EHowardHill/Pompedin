@@ -201,6 +201,8 @@
         }
 
         VF.addLayer('Layer 1', 'vector');
+        VF.undoStack = [];
+        VF.redoStack = [];
         VF.fitCanvas();
         VF.resetView();
         VF.uiTimeline();

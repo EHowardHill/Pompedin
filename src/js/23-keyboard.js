@@ -176,7 +176,7 @@
         var items = VF.getSelectedItems();
         if (items.length === 0) return false;
 
-        /* FIX: Check if layer is locked before cutting */
+        /* Check if layer is locked before cutting */
         if (VF.isLocked && VF.isLocked()) {
             VF.toast('Layer is locked');
             return false;
@@ -197,6 +197,7 @@
 
             VF.selSegments = [];
             VF.clearHandles();
+            if (VF.syncUIFromSelection) VF.syncUIFromSelection();
             VF.saveFrame();
             VF.uiTimeline();
             VF.render();
@@ -215,7 +216,7 @@
         var pl = VF.pLayers[S.activeId];
         if (!pl) return false;
 
-        /* FIX: Check if layer is locked before pasting */
+        /* Check if layer is locked before pasting */
         if (VF.isLocked && VF.isLocked()) {
             VF.toast('Layer is locked');
             return false;
@@ -295,12 +296,24 @@
                 } else if (VF.tlSelection && VF.tlSelection.length > 0) {
                     // 1. Copy
                     var minF = Math.min.apply(null, VF.tlSelection.map(function (s) { return s.f; }));
-                    var sortedLayers = [].concat(S.layers).sort(function (a, b) { return b.z - a.z; });
+                    var sortedLayers = VF.flattenDrawables
+                        ? VF.flattenDrawables().slice().reverse()
+                        : [].concat(S.layers).sort(function (a, b) { return b.z - a.z; });
                     var activeLIndex = sortedLayers.findIndex(function (lyr) { return lyr.id === S.activeId; });
 
                     S.clipNodes = [];
                     VF.tlSelection.forEach(function (sel) {
-                        if (sel.l === '__camera') return;
+                        // Handle camera copy phase
+                        if (sel.l === '__camera') {
+                            if (S.camera && S.camera.frames && S.camera.frames[sel.f] !== undefined) {
+                                S.clipNodes.push({
+                                    fOffset: sel.f - minF, lOffset: '__camera', type: 'camera',
+                                    data: JSON.parse(JSON.stringify(S.camera.frames[sel.f]))
+                                });
+                            }
+                            return;
+                        }
+
                         var lyr = S.layers.find(function (x) { return x.id === sel.l; });
                         var lIndex = sortedLayers.findIndex(function (x) { return x.id === sel.l; });
                         if (!lyr) return;
@@ -318,7 +331,14 @@
                     var reloadLayers = new Set();
 
                     VF.tlSelection.forEach(function (sel) {
-                        if (sel.l === '__camera') return;
+                        // Handle camera delete phase
+                        if (sel.l === '__camera') {
+                            if (S.camera && S.camera.frames && S.camera.frames[sel.f] !== undefined) {
+                                delete S.camera.frames[sel.f];
+                            }
+                            return;
+                        }
+
                         var lyr = S.layers.find(function (x) { return x.id === sel.l; });
                         if (lyr && !lyr.locked) {
                             if (sel.type === 'transform' && lyr.transforms) delete lyr.transforms[sel.f];
@@ -349,7 +369,9 @@
                 } else if (VF.tlSelection && VF.tlSelection.length > 0) {
                     // BULK TIMELINE COPY
                     var minF = Math.min.apply(null, VF.tlSelection.map(function (s) { return s.f; }));
-                    var sortedLayers = [].concat(S.layers).sort(function (a, b) { return b.z - a.z; });
+                    var sortedLayers = VF.flattenDrawables
+                        ? VF.flattenDrawables().slice().reverse()
+                        : [].concat(S.layers).sort(function (a, b) { return b.z - a.z; });
                     var activeLIndex = sortedLayers.findIndex(function (lyr) { return lyr.id === S.activeId; });
 
                     S.clipNodes = [];
@@ -402,9 +424,12 @@
                 if (VF.itemClip && VF.itemClip.length > 0 && inSelectTool) {
                     pasteItems();
                 } else if (S.clipNodes && S.clipNodes.length > 0) {
+                    
                     // BULK TIMELINE PASTE
                     VF.saveHistory();
-                    var sortedLayers = [].concat(S.layers).sort(function (a, b) { return b.z - a.z; });
+                    var sortedLayers = VF.flattenDrawables
+                        ? VF.flattenDrawables().slice().reverse()
+                        : [].concat(S.layers).sort(function (a, b) { return b.z - a.z; });
                     var activeLIndex = sortedLayers.findIndex(function (lyr) { return lyr.id === S.activeId; });
                     var pastedCount = 0;
                     var reloadLayers = new Set();
@@ -516,6 +541,7 @@
             } else if (VF.selSegments.length > 0) {
                 VF.selSegments = [];
                 VF.clearHandles();
+                if (VF.syncUIFromSelection) VF.syncUIFromSelection();
             }
         }
         else if (k === 'delete' || k === 'backspace') {
@@ -531,6 +557,7 @@
                 items.forEach(function (item) { item.remove(); });
                 VF.selSegments = [];
                 VF.clearHandles();
+                if (VF.syncUIFromSelection) VF.syncUIFromSelection();
                 VF.saveFrame();
                 VF.uiTimeline();
                 VF.render();

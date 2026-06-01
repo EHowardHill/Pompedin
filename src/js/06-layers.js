@@ -8,7 +8,10 @@
         var P = getP();
         VF.saveHistory();
         var id = S.nextId++;
-        var maxZ = S.layers.length > 0 ? Math.max.apply(null, S.layers.map(function (l) { return l.z; })) : -1;
+
+        var parentId = VF.resolveNewParent ? VF.resolveNewParent() : null;
+        var sib = VF.childrenOf ? VF.childrenOf(parentId) : S.layers;
+        var maxZ = sib.length > 0 ? Math.max.apply(null, sib.map(function (l) { return l.z; })) : -1;
 
         var l = {
             id: id, name: name || ('Layer ' + id), type: type || 'vector',
@@ -37,35 +40,51 @@
     };
 
     VF.delLayer = function (id) {
-        if (S.layers.length <= 1) return;
+        var item = VF.getItem(id); if (!item) return;
+        if (!VF.isFolder(item) && VF.drawableCount() <= 1) { VF.toast('Need at least one layer'); return; }
         VF.saveHistory();
+        if (VF.isFolder(item)) {
+            VF.childrenOf(id).forEach(function (c) { c.parentId = item.parentId || null; });
+            VF.reindexSiblings(item.parentId || null);
+        }
         S.layers = S.layers.filter(function (l) { return l.id !== id; });
         if (VF.pLayers[id]) { VF.pLayers[id].remove(); delete VF.pLayers[id]; }
-        if (S.activeId === id) S.activeId = S.layers[0].id;
+        if (S.activeId === id) {
+            var d = S.layers.find(function (l) { return !VF.isFolder(l); });
+            S.activeId = d ? d.id : (S.layers[0] ? S.layers[0].id : 1);
+        }
         VF.uiLayers(); VF.uiTimeline(); VF.render();
     };
 
     VF.dupLayer = function (id) {
+        var src = VF.getItem(id); if (!src) return;
         VF.saveHistory();
-        var src = S.layers.find(function (l) { return l.id === id; });
-        if (!src) return;
-        var dup = VF.addLayer(src.name + ' copy', src.type);
-        for (var k in src.frames) {
-            dup.frames[k] = JSON.parse(JSON.stringify(src.frames[k]));
+        var idMap = {};
+        function deepCopy(orig, newParentId, isTop) {
+            var nid = S.nextId++;
+            idMap[orig.id] = nid;
+            var copy = JSON.parse(JSON.stringify(orig));
+            copy.id = nid; copy.parentId = newParentId; copy.cache = {};
+            if (isTop) copy.name = orig.name + ' copy';
+            S.layers.push(copy);
+            if (!VF.isFolder(copy)) {
+                var pl = new (VF.P).Layer(); pl.name = 'L' + nid; VF.pLayers[nid] = pl;
+            } else {
+                VF.childrenOf(orig.id).forEach(function (c) { deepCopy(c, nid, false); });
+                if (copy.kind === 'switch' && copy.switch && copy.switch.frames) {
+                    Object.keys(copy.switch.frames).forEach(function (k) {
+                        var oc = copy.switch.frames[k];
+                        if (idMap[oc] !== undefined) copy.switch.frames[k] = idMap[oc];
+                    });
+                }
+            }
+            return copy;
         }
-        dup.opacity = src.opacity;
-        dup.imgData = src.imgData;
-        dup.tweens = src.tweens ? JSON.parse(JSON.stringify(src.tweens)) : {};
-        dup.transforms = src.transforms ? JSON.parse(JSON.stringify(src.transforms)) : {};
-        dup.loops = src.loops ? JSON.parse(JSON.stringify(src.loops)) : {};
-        dup.blendMode = src.blendMode || 'normal';
-        dup.locked = false;
-        dup.reference = src.reference || false;
-        dup.colorTag = src.colorTag || 'none';
-        dup.wobble = src.wobble
-            ? JSON.parse(JSON.stringify(src.wobble))
-            : { enabled: false, offset: 3, scale: 1.0, stroke: true, fill: true, perFrame: true };
-        VF.render(); VF.uiTimeline();
+        var top = deepCopy(src, src.parentId || null, true);
+        top.z = src.z + 0.5;                  // slot just above the original
+        VF.reindexSiblings(src.parentId || null);
+        S.activeId = top.id;
+        VF.render(); VF.uiLayers(); VF.uiTimeline();
     };
 
 })();

@@ -112,20 +112,27 @@
         $(this).toggleClass('on', S.cfg.showBrushGuide);
     });
 
-    // Smooth Bindings (new-stroke only — no selection apply)
-    $('#rng-smooth').on('input', function () { S.cfg.smooth = +$(this).val(); $('#v-smooth').val(this.value); });
-    $('#v-smooth').on('change input', function () {
-        var val = Math.max(1, Math.min(5, +$(this).val() || 1));
-        S.cfg.smooth = val; $('#rng-smooth').val(val);
-    });
+    var _opacityHistorySaved = false;
 
-    // Layer Opacity Bindings
-    // FIX: Call VF.render() so opacity changes are immediately visible
-    //        (the old code only set pl.opacity but didn't trigger a redraw
-    //         for vector layers that might be using wobble, blend modes, etc.)
+    $('#rng-opacity').on('pointerdown', function () { _opacityHistorySaved = false; });
+    $('#v-opacity').on('focus', function () { _opacityHistorySaved = false; });
+
     $('#rng-opacity').on('input', function () {
         var l = VF.AL(); if (!l) return;
+
+        // Save history once at the start of the drag
+        if (!_opacityHistorySaved) {
+            VF.saveHistory();
+            _opacityHistorySaved = true;
+        }
+
         l.opacity = +this.value / 100;
+        $('#v-opacity').val(this.value);
+
+        // Folders have no Paper.js layer — their opacity multiplies into
+        // descendants, so a full re-render is required to apply it.
+        if (VF.isFolder && VF.isFolder(l)) { VF.render(); return; }
+
         var pl = VF.pLayers[l.id];
         if (pl) {
             if (l.type === 'image') {
@@ -135,14 +142,24 @@
                 pl.opacity = l.opacity;
             }
         }
-        $('#v-opacity').val(this.value);
         VF.view.update();
     });
 
     $('#v-opacity').on('change input', function () {
         var l = VF.AL(); if (!l) return;
+
+        // Save history once at the start of typing/spinning
+        if (!_opacityHistorySaved) {
+            VF.saveHistory();
+            _opacityHistorySaved = true;
+        }
+
         var val = Math.max(0, Math.min(100, +$(this).val() || 0));
         l.opacity = val / 100;
+        $('#rng-opacity').val(val);
+
+        if (VF.isFolder && VF.isFolder(l)) { VF.render(); return; }
+
         var pl = VF.pLayers[l.id];
         if (pl) {
             if (l.type === 'image') {
@@ -152,14 +169,12 @@
                 pl.opacity = l.opacity;
             }
         }
-        $('#rng-opacity').val(val);
         VF.view.update();
     });
 
     // ── Stroke Color (Selection-aware) ──
     $('#clr-stroke').on('input', function () {
         S.cfg.strokeCol = this.value;
-        $('#sw-stroke').css('background', this.value);
         if (VF.hasSelection && VF.hasSelection()) {
             VF.applyPropertyToSelection('strokeColor', this.value);
         }
@@ -168,7 +183,6 @@
     // ── Fill Color (Selection-aware) ──
     $('#clr-fill').on('input', function () {
         S.cfg.fillCol = this.value;
-        $('#sw-fill').css('background', this.value);
         if (VF.hasSelection && VF.hasSelection()) {
             VF.applyPropertyToSelection('fillColor', this.value);
         }

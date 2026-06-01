@@ -1,0 +1,22 @@
+{
+    "bundle": {
+        "externalBin": null,
+        "resources": null,
+        "targets": [
+            "deb",
+            "rpm"
+        ],
+        "linux": {
+            "deb": {
+                "depends": [
+                    "ffmpeg"
+                ]
+            },
+            "rpm": {
+                "depends": [
+                    "ffmpeg"
+                ]
+            }
+        }
+    }
+}

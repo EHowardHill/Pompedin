@@ -607,8 +607,8 @@
                             <span style="font-size:10px;color:var(--text-dim);width:36px">Input</span>
                             <select id="sel-tablet-mode"
                                 style="background:var(--bg-dark);border:1px solid var(--border);color:var(--text-primary);font-size:10px;padding:3px 4px;border-radius:4px;width:130px;outline:none;cursor:pointer;height:24px;">
-                                <option value="ink">Windows Ink</option>
-                                <option value="legacy">Legacy Wintab</option>
+                                <option value="ink">Standard</option>
+                                <option value="legacy">Smoothed (legacy tablets)</option>
                             </select>
                         </div>
                         <div class="ribbon-group-label">Tablet</div>
@@ -902,12 +902,14 @@
                 </div>
             </div>
             <div class="about-lib">
-                <div class="about-lib-name">FFmpeg <span class="about-lib-ver">(gyan.dev build)</span></div>
-                <div class="about-lib-info">Multimedia framework used for MP4 export</div>
+                <div class="about-lib-name">FFmpeg</div>
+                <div class="about-lib-info">Multimedia framework used for MP4 export. Bundled on Windows &amp; macOS;
+                    provided by the system package manager on Linux.</div>
                 <div class="about-lib-license">
-                    GPLv3 License — © FFmpeg developers.<br>
-                    Source code and build scripts available at <a href="https://www.gyan.dev/ffmpeg/builds/"
-                        class="about-link" target="_blank">gyan.dev/ffmpeg/builds/</a>
+                    GPLv3 License — © FFmpeg developers. Bundled builds from
+                    <a href="https://www.gyan.dev/ffmpeg/builds/" class="about-link" target="_blank">gyan.dev</a>
+                    (Windows) and
+                    <a href="https://evermeet.cx/ffmpeg/" class="about-link" target="_blank">evermeet.cx</a> (macOS).
                 </div>
             </div>
             <div class="about-divider"></div>
@@ -956,95 +958,196 @@
                     <ul class="help-index">
                         <li><a href="#help-basics">1. Getting Started</a></li>
                         <li><a href="#help-tools">2. Drawing Tools</a></li>
-                        <li><a href="#help-selection">3. Selection & Editing</a></li>
-                        <li><a href="#help-layers">4. Layers & Timeline</a></li>
-                        <li><a href="#help-audio">5. Audio Syncing</a></li>
-                        <li><a href="#help-export">6. Exporting</a></li>
-                        <li><a href="#help-shortcuts">7. Keyboard Shortcuts</a></li>
+                        <li><a href="#help-selection">3. Selection &amp; Editing</a></li>
+                        <li><a href="#help-layers">4. Layers &amp; Timeline</a></li>
+                        <li><a href="#help-camera">5. Camera</a></li>
+                        <li><a href="#help-audio">6. Audio Syncing</a></li>
+                        <li><a href="#help-export">7. Exporting</a></li>
+                        <li><a href="#help-custom">8. Customizing Shortcuts</a></li>
+                        <li><a href="#help-shortcuts">9. Keyboard &amp; Mouse</a></li>
                     </ul>
                 </div>
 
                 <div class="help-content" id="help-scroll-area">
 
                     <h2 id="help-basics">1. Getting Started</h2>
-                    <p>Pompedin is a vector-based 2D animation tool. Pompedin separates your drawings into
-                        <b>Keyframes</b> on a timeline. When you draw on a blank frame, a new keyframe is automatically
-                        created.
+                    <p>Pompedin is a vector-based 2D animation tool. Your drawings live as <b>Keyframes</b> on a
+                        timeline —
+                        drawing on a blank frame automatically creates a keyframe.</p>
+                    <p>Use the <b>Project</b> tab to set canvas size, frame rate (FPS), animation length, film grain,
+                        and
+                        audio. Use the <b>Workspace</b> tab to change the theme, canvas background, tablet input mode,
+                        and to
+                        <b>customize your keyboard shortcuts</b> (see section 8).
                     </p>
-                    <p>Use the <b>Workspace</b> tab to customize the application theme, and the <b>Project</b> tab to
-                        adjust your canvas size, frame rate (FPS), and total animation length.</p>
 
                     <h2 id="help-tools">2. Drawing Tools</h2>
+                    <p>Default keys follow the Moho Pro 13.5 layout and are all remappable.</p>
                     <ul>
-                        <li><b>Brush (B):</b> Draws vector strokes. Use the <b>Brush</b> tab to adjust size, smoothing,
-                            map pen pressure, or apply bitmap textures along the vector path.</li>
-                        <li><b>Eraser (E):</b> Removes entire paths or segments that fall under the cursor.</li>
-                        <li><b>Fill (G):</b> Click inside a closed shape to fill it. Toggle "Fill" and "Stroke" in the
-                            ribbon to control what gets applied.</li>
-                        <li><b>Hide Edge (H):</b> Click or drag over a line segment to magically hide it while keeping
-                            the underlying vector shape intact (great for cel-shading intersections).</li>
-                    </ul>
-
-                    <h2 id="help-selection">3. Selection & Editing</h2>
-                    <p>The Select Tool (V) operates in two modes:</p>
-                    <ul>
-                        <li><b>Object Mode:</b> Click a shape to select it. A bounding box will appear, allowing you to
-                            Move, Scale, and Rotate the object.</li>
-                        <li><b>Vertex Mode:</b> Double-click a selected shape to reveal its anchor points. You can drag
-                            individual points or adjust their Bézier handles to fine-tune the curve. Press
-                            <kbd>Esc</kbd> or click empty space to exit.
+                        <li><b>Brush (F):</b> draws vector strokes. The <b>Brush</b> tab adjusts size, smoothing,
+                            spacing,
+                            rotation/jitter dynamics, pen pressure, and bitmap textures applied along the vector path.
                         </li>
-                    </ul>
-
-                    <h2 id="help-layers">4. Layers & Timeline</h2>
-                    <p>Pompedin supports infinite layers. The timeline dictates when artwork appears.</p>
-                    <ul>
-                        <li><b>Blank Key (F6):</b> Inserts an empty keyframe at the playhead.</li>
-                        <li><b>Duplicate Key (F7):</b> Copies the current frame's artwork into a new keyframe so you can
-                            modify it.</li>
-                        <li><b>Onion Skin:</b> Toggle Onion Skinning in the <b>Brush</b> tab to see faded versions of
-                            previous/next frames. Click "+ Add Rule" to configure custom intervals.</li>
-                        <li><b>Right-Click Menu:</b> Right-click any cell on the timeline to Copy, Paste, Insert, or
-                            Delete frames.</li>
-                    </ul>
-
-                    <h2 id="help-audio">5. Audio Syncing</h2>
-                    <p>You can import an audio file to help with lip-syncing and timing. Go to the <b>Project</b> tab
-                        and click "Load Audio". A waveform will appear beneath the timeline ruler. Audio playback scrubs
-                        automatically as you play your animation.</p>
-
-                    <h2 id="help-export">6. Exporting</h2>
-                    <p>All export options are located in the <b>Export</b> tab.</p>
-                    <ul>
-                        <li><b>Video (MP4):</b> Renders your animation to a high-quality video file, mixing in your
-                            audio track automatically.</li>
-                        <li><b>Animated GIF:</b> Generates a lightweight looping GIF. You can adjust the color count and
-                            dithering.</li>
-                        <li><b>Spritesheet:</b> Tiles all frames into a single large PNG image, ideal for game engines.
+                        <li><b>Eraser (E):</b> removes whole paths or segments under the cursor.</li>
+                        <li><b>Fill / Paint Bucket (P):</b> click inside a closed shape to fill it. Toggle <b>Fill</b>
+                            and
+                            <b>Stroke</b> in the Home tab to control what gets applied.
                         </li>
-                        <li><b>Sequence:</b> Exports every frame as an individual numbered PNG file.</li>
+                        <li><b>Hide Edge (H):</b> click or drag over a line segment to hide it while keeping the
+                            underlying
+                            vector shape intact — great for cel-shading joins.</li>
+                        <li><b>Eyedropper (L):</b> sample a color. You can also hold <kbd>Left Alt</kbd> to pick a
+                            stroke
+                            color or <kbd>Right Alt</kbd> for a fill color.</li>
                     </ul>
 
-                    <h2 id="help-shortcuts">7. Keyboard Shortcuts</h2>
+                    <h2 id="help-selection">3. Selection &amp; Editing</h2>
+                    <p>The Select / Edit tool (<b>T</b>) works in two modes:</p>
                     <ul>
-                        <li><kbd>Space</kbd> or <kbd>Middle-Click</kbd> - Pan Canvas</li>
-                        <li><kbd>Scroll Wheel</kbd> - Zoom Canvas</li>
-                        <li><kbd>Ctrl</kbd> + <kbd>Z</kbd> - Undo</li>
-                        <li><kbd>Ctrl</kbd> + <kbd>Y</kbd> - Redo</li>
-                        <li><kbd>Ctrl</kbd> + <kbd>S</kbd> - Save Project</li>
-                        <li><kbd>Ctrl</kbd> + <kbd>C</kbd> / <kbd>V</kbd> - Copy / Paste items (or frames)</li>
-                        <li><kbd>Ctrl</kbd> + <kbd>0</kbd> - Fit to Screen</li>
-                        <li><kbd>Ctrl</kbd> + <kbd>Drag</kbd> - Zoom (anchored at cursor)</li>
-                        <li><kbd>Left Alt</kbd> - Pick Stroke Color (Eyedropper)</li>
-                        <li><kbd>Right Alt</kbd> - Pick Fill Color (Eyedropper)</li>
-                        <li><kbd>[</kbd> / <kbd>]</kbd> - Decrease / Increase Stroke Size (hold <kbd>Shift</kbd> for x5)
+                        <li><b>Object Mode:</b> click a shape to select it; a bounding box lets you move, scale, and
+                            rotate
+                            it.</li>
+                        <li><b>Vertex Mode:</b> double-click a selected shape to reveal its anchor points, then drag
+                            points
+                            or their Bézier handles. Press <kbd>Esc</kbd> or click empty space to exit.</li>
+                    </ul>
+                    <p>The <b>Lasso (G)</b> selects points inside a freeform region. The <b>Tools</b> tab adds Path
+                        Tools
+                        (Simplify, Smooth, Close, Reverse), Boolean Ops (Union, Subtract, Intersect, Exclude — needs two
+                        closed paths), Align &amp; Distribute, Flip, and Select All. <b>Symmetry</b> mirrors new strokes
+                        across adjustable axes, and <b>Canvas Guides</b> add a grid, safe zones, and
+                        center/rule-of-thirds
+                        overlays.</p>
+
+                    <h2 id="help-layers">4. Layers &amp; Timeline</h2>
+                    <p>Pompedin supports unlimited layers; the timeline controls when artwork appears.</p>
+                    <ul>
+                        <li><b>New Frame (F5):</b> inserts an empty keyframe at the playhead.</li>
+                        <li><b>Duplicate Frame (F6):</b> copies the current frame's artwork into a new keyframe.</li>
+                        <li><b>Delete Frame (Shift+F5):</b> removes the keyframe at the playhead.</li>
+                        <li><b>Tweening:</b> right-click a keyframe and choose <b>Toggle Tween</b> to interpolate vector
+                            shapes (or image transforms) between keys. The <b>↳ Transform</b> track keyframes a layer's
+                            position, rotation, and scale.</li>
+                        <li><b>Loops:</b> right-click a keyframe → <b>Loop Settings</b> to repeat a span of frames
+                            (relative
+                            or absolute).</li>
+                        <li><b>Onion Skin:</b> toggle it in the <b>Brush</b> tab or with the onion bar under the
+                            timeline
+                            ruler; add or drag rules, and scroll a marker to fade it.</li>
+                        <li><b>Layer Settings (⚙ or double-click a layer):</b> rename, set blend mode, lock, mark as
+                            Reference (excluded from export), assign a color tag, and enable <b>Sketch Wobble</b> for a
+                            hand-drawn boil.</li>
+                    </ul>
+                    <p>Drag layers to reorder them. Right-click any timeline cell to copy, paste, insert, or remove
+                        frames,
+                        and drag keyframes (or marquee-select several) to move them around.</p>
+
+                    <h2 id="help-camera">5. Camera</h2>
+                    <p>The <b>Camera</b> tool (<b>4</b>) and the <b>Tools</b> tab let you keyframe a virtual camera —
+                        position, zoom, and rotation — on its own timeline row. Values interpolate between keys for
+                        smooth
+                        pans, pushes, and rolls, and the camera is baked into every export. Set or delete camera keys
+                        from
+                        the Tools tab or by right-clicking the Camera row. Note that <b>Rotate Workspace (8)</b> only
+                        spins
+                        your view and does not affect the camera or the output.</p>
+
+                    <h2 id="help-audio">6. Audio Syncing</h2>
+                    <p>Import an audio file for lip-syncing and timing from the <b>Project</b> tab → <b>Load Audio</b>.
+                        A
+                        waveform appears beneath the timeline ruler and scrubs as you play. Volume is set there and is
+                        mixed
+                        into MP4 exports automatically. For the widest cross-platform preview support, use WAV, MP3, or
+                        AAC/M4A files.</p>
+
+                    <h2 id="help-export">7. Exporting</h2>
+                    <p>All options live in the <b>Export</b> tab.</p>
+                    <ul>
+                        <li><b>Frame (PNG):</b> exports the current frame.</li>
+                        <li><b>Sequence:</b> exports every frame as an individual numbered PNG.</li>
+                        <li><b>Video (MP4):</b> renders the animation to video, mixing in your audio track. FFmpeg is
+                            bundled
+                            on Windows &amp; macOS; on Linux, install it with your package manager (e.g.
+                            <kbd>sudo apt install ffmpeg</kbd> or <kbd>sudo dnf install ffmpeg</kbd>).
                         </li>
-                        <li><kbd>Shift</kbd> + <kbd>H</kbd> - Toggle Horizontal Symmetry</li>
-                        <li><kbd>Shift</kbd> + <kbd>V</kbd> - Toggle Vertical Symmetry</li>
-                        <li><kbd>↑</kbd> / <kbd>↓</kbd> - Select Layer Above / Below</li>
-                        <li><kbd>Delete</kbd> - Delete selected items</li>
-                        <li><kbd>Enter</kbd> - Play / Pause Animation</li>
-                        <li><kbd>←</kbd> / <kbd>→</kbd> - Previous / Next Frame</li>
+                        <li><b>Animated GIF:</b> a looping GIF with adjustable color count and dithering.</li>
+                        <li><b>Spritesheet:</b> tiles all frames into one PNG (set columns and padding) — ideal for game
+                            engines.</li>
+                    </ul>
+                    <p>The <b>Range &amp; Scale</b> controls set which frames export and at what output size.</p>
+
+                    <h2 id="help-custom">8. Customizing Shortcuts</h2>
+                    <p>Pompedin ships with the <b>Moho Pro 13.5</b> keyboard layout, and every tool/navigation shortcut
+                        is
+                        remappable. Open the <b>Workspace</b> tab → <b>Shortcuts</b>, click any binding, then press the
+                        key
+                        or combination you want (<kbd>Esc</kbd> cancels). Conflicting bindings are cleared
+                        automatically,
+                        your map is saved locally, and <b>Reset to Moho Defaults</b> restores everything.</p>
+                    <p>The core editing combos (Undo/Redo, Copy/Cut/Paste, Save, Select All), the bracket keys,
+                        <kbd>Space</kbd>, <kbd>Esc</kbd>, and <kbd>Delete</kbd> are fixed and can't be reassigned.
+                    </p>
+
+                    <h2 id="help-shortcuts">9. Keyboard &amp; Mouse Shortcuts</h2>
+                    <p>Tool and navigation keys below are the defaults — remap them in the Workspace tab. On macOS,
+                        <kbd>Cmd</kbd> works in place of <kbd>Ctrl</kbd>.
+                    </p>
+                    <p><b>Tools</b></p>
+                    <ul>
+                        <li><kbd>T</kbd> — Select / Edit</li>
+                        <li><kbd>F</kbd> — Brush</li>
+                        <li><kbd>G</kbd> — Lasso</li>
+                        <li><kbd>E</kbd> — Eraser</li>
+                        <li><kbd>P</kbd> — Fill (Paint Bucket)</li>
+                        <li><kbd>H</kbd> — Hide Edge</li>
+                        <li><kbd>L</kbd> — Eyedropper</li>
+                        <li><kbd>M</kbd> — Translate Layer</li>
+                        <li><kbd>R</kbd> — Rotate Layer</li>
+                        <li><kbd>S</kbd> — Scale Layer</li>
+                        <li><kbd>4</kbd> — Camera</li>
+                        <li><kbd>8</kbd> — Rotate Workspace</li>
+                        <li><kbd>Z</kbd> — Zoom Workspace</li>
+                    </ul>
+                    <p><b>Playback &amp; Frames</b></p>
+                    <ul>
+                        <li><kbd>Space</kbd> — Play / Stop</li>
+                        <li><kbd>←</kbd> / <kbd>→</kbd> — Previous / Next Frame</li>
+                        <li><kbd>F5</kbd> — New Frame</li>
+                        <li><kbd>F6</kbd> — Duplicate Frame</li>
+                        <li><kbd>Shift</kbd> + <kbd>F5</kbd> — Delete Frame</li>
+                        <li><kbd>↑</kbd> / <kbd>↓</kbd> — Select Layer Above / Below</li>
+                    </ul>
+                    <p><b>View &amp; Canvas</b></p>
+                    <ul>
+                        <li><kbd>Home</kbd> — Reset View</li>
+                        <li><kbd>Shift</kbd> + <kbd>Home</kbd> — View All (Fit to Screen)</li>
+                        <li><kbd>Ctrl</kbd> + <kbd>G</kbd> — Toggle Grid</li>
+                        <li><kbd>Ctrl</kbd> + <kbd>L</kbd> — Toggle Onion Skins</li>
+                        <li><kbd>Shift</kbd> + <kbd>H</kbd> / <kbd>Shift</kbd> + <kbd>V</kbd> — Toggle Horizontal /
+                            Vertical
+                            Symmetry</li>
+                    </ul>
+                    <p><b>Editing (fixed)</b></p>
+                    <ul>
+                        <li><kbd>Ctrl</kbd> + <kbd>Z</kbd> — Undo</li>
+                        <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Z</kbd> / <kbd>Ctrl</kbd> + <kbd>Y</kbd> — Redo
+                        </li>
+                        <li><kbd>Ctrl</kbd> + <kbd>S</kbd> — Save · <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> —
+                            Save As</li>
+                        <li><kbd>Ctrl</kbd> + <kbd>C</kbd> / <kbd>X</kbd> / <kbd>V</kbd> — Copy / Cut / Paste items or
+                            keyframes</li>
+                        <li><kbd>Ctrl</kbd> + <kbd>A</kbd> — Select All</li>
+                        <li><kbd>[</kbd> / <kbd>]</kbd> — Decrease / Increase stroke width (hold <kbd>Shift</kbd> for
+                            ×5)</li>
+                        <li><kbd>Esc</kbd> — Deselect / Exit vertex mode</li>
+                        <li><kbd>Delete</kbd> / <kbd>Backspace</kbd> — Delete selected items or keyframes</li>
+                    </ul>
+                    <p><b>Mouse</b></p>
+                    <ul>
+                        <li><kbd>Middle-Click</kbd> drag (or pen side button) — Pan canvas</li>
+                        <li><kbd>Scroll Wheel</kbd> — Zoom canvas</li>
+                        <li><kbd>Ctrl</kbd> + <kbd>Drag</kbd> — Zoom, anchored at the cursor</li>
+                        <li><b>Double-click</b> a shape — Enter vertex edit mode</li>
                     </ul>
                 </div>
             </div>
@@ -1115,6 +1218,8 @@
     <script src="js/33-tools-advanced.js"></script>
     <script src="js/34-camera.js"></script>
     <script src="js/35-onion-timeline.js"></script>
+    <script src="js/36-shortcuts.js"></script>
+</body>
 </body>
 
 </html>

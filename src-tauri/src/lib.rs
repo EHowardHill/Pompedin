@@ -1,3 +1,5 @@
+// lib.rs
+
 use base64::{engine::general_purpose, Engine as _};
 use chrono::Local;
 use serde::Serialize;
@@ -524,16 +526,35 @@ async fn mp4_render(
     args.push(format!("{duration_sec:.4}"));
     args.push(output_path);
 
-    let sidecar = app
+// FFmpeg source differs by platform:
+    //   Windows / macOS -> bundled sidecar (externalBin)
+    //   Linux           -> system ffmpeg on PATH (declared as a package dependency)
+    #[cfg(target_os = "linux")]
+    let ffmpeg = app.shell().command("ffmpeg");
+
+    #[cfg(not(target_os = "linux"))]
+    let ffmpeg = app
         .shell()
         .sidecar("ffmpeg")
         .map_err(|e| format!("Failed to create FFmpeg sidecar: {}", e))?;
 
-    let output = sidecar
+    let output = ffmpeg
         .args(&args)
         .output()
         .await
-        .map_err(|e| format!("Failed to execute FFmpeg sidecar: {}", e))?;
+        .map_err(|e| {
+            #[cfg(target_os = "linux")]
+            {
+                format!(
+                    "Could not run ffmpeg. Make sure it is installed via your package manager \
+                     (e.g. `sudo apt install ffmpeg` or `sudo dnf install ffmpeg`). Details: {e}"
+                )
+            }
+            #[cfg(not(target_os = "linux"))]
+            {
+                format!("Failed to execute FFmpeg sidecar: {e}")
+            }
+        })?;
 
     cleanup_session(&state.mp4_sessions, &session_id);
 

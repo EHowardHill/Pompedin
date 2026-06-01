@@ -82,7 +82,7 @@
         $('#sel-tablet-mode').on('change', function () {
             VF.wsPrefs.tabletMode = $(this).val();
             saveWorkspacePrefs();
-            VF.toast('Tablet mode set to ' + ($(this).val() === 'ink' ? 'Windows Ink' : 'Legacy / Wintab'));
+            VF.toast('Tablet mode set to ' + ($(this).val() === 'ink' ? 'Standard' : 'Smoothed'));
         });
 
         $('#clr-ws-bg').on('input change', function () {

@@ -14,7 +14,7 @@ base = "./"
 """
 
 file_list = [
-    base + "src/style.css",
+    # base + "src/style.css",
     base + "src/index.html",
     base + "src/js/01-state.js",
     base + "src/js/02-brush-textures.js",
@@ -50,13 +50,8 @@ file_list = [
     base + "src/js/32-export-advanced.js",
     base + "src/js/33-tools-advanced.js",
     base + "src/js/34-camera.js",
-    # base + "src/style-about.css",
-    base + "src/style-layer-settings.css",
+    base + "src/js/35-onion-timeline.js",
 ]
-
-"""
-
-"""
 
 for file in file_list:
 

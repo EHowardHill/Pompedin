@@ -499,62 +499,17 @@
             return;
         }
 
-        /* ── Mirror Canvas toggles ──
-           Shift+H = toggle horizontal symmetry
-           Shift+V = toggle vertical symmetry */
-        if (e.shiftKey && k === 'h') {
-            e.preventDefault();
-            S.cfg.symmetryH = !S.cfg.symmetryH;
-            $('#tgl-sym-h').toggleClass('on', S.cfg.symmetryH);
-            VF.render();
-            VF.toast('Horizontal symmetry ' + (S.cfg.symmetryH ? 'ON' : 'OFF'));
-            return;
-        }
-        if (e.shiftKey && k === 'v') {
-            e.preventDefault();
-            S.cfg.symmetryV = !S.cfg.symmetryV;
-            $('#tgl-sym-v').toggleClass('on', S.cfg.symmetryV);
-            VF.render();
-            VF.toast('Vertical symmetry ' + (S.cfg.symmetryV ? 'ON' : 'OFF'));
-            return;
+        /* ── Space pan-hold stays hardcoded (needs keyup tracking) ── */
+        if (e.key === ' ') {
+            spaceHeld = false;
+            VF.setTool(preSpaceTool || 'brush');
+            preSpaceTool = null;
         }
 
-        if (k === 'c' && !e.ctrlKey && !e.metaKey) VF.setTool('camera');
-        else if (k === 'b') VF.setTool('brush');
-        else if (k === 'v' && !e.shiftKey) VF.setTool('select');
-        else if (k === 'l') VF.setTool('lasso');
-        else if (k === 'e') VF.setTool('eraser');
-        else if (k === 'g') VF.setTool('fill');
-        else if (k === 'h' && !e.ctrlKey && !e.shiftKey) VF.setTool('hide-edge');
-        else if (k === 't') VF.setTool('translate');
-        else if (k === 'r' && !e.ctrlKey) {
-            if (e.shiftKey) VF.setTool('rotate-view');
-            else VF.setTool('rotate');
-        }
-        else if (k === 's' && !e.ctrlKey && !e.metaKey) VF.setTool('scale');
-        else if (k === 'z' && !e.ctrlKey && !e.metaKey) VF.setTool('zoom');
-        else if (k === ' ') { e.preventDefault(); if (!spaceHeld) { spaceHeld = true; preSpaceTool = S.tool; VF.setTool('pan'); } }
-        else if (k === 'arrowright') { e.preventDefault(); VF.goFrame(S.tl.frame + 1); }
-        else if (k === 'arrowleft') { e.preventDefault(); VF.goFrame(S.tl.frame - 1); }
-        else if (k === 'arrowup' || k === 'arrowdown') {
-            e.preventDefault();
-            /* Layers are displayed sorted by descending z (top = highest z).
-               "Up" selects the layer above (lower index), "down" selects below. */
-            var sorted = [].concat(S.layers).sort(function (a, b) { return b.z - a.z; });
-            var curIdx = sorted.findIndex(function (l) { return l.id === S.activeId; });
-            if (curIdx === -1) return;
-            var nextIdx = k === 'arrowup' ? curIdx - 1 : curIdx + 1;
-            if (nextIdx < 0 || nextIdx >= sorted.length) return;
-            S.activeId = sorted[nextIdx].id;
-            VF.selSegments = [];
-            VF.clearHandles();
-            VF.uiLayers();
-            VF.render();
-        }
-        else if (k === 'enter') { e.preventDefault(); VF.togglePlay(); }
-        else if (k === 'f6') { e.preventDefault(); $('#btn-add-blank').click(); }
-        else if (k === 'f7') { e.preventDefault(); $('#btn-add-dup').click(); }
-        else if (k === 'escape') {
+        /* ── Remappable actions: tools, playback, frame/layer nav, symmetry ── */
+        if (VF.shortcuts && VF.shortcuts.handle(e)) return;
+
+        if (k === 'escape') {
             e.preventDefault();
             if (VF.selectMode === 'vertex') {
                 VF.exitVertexMode();

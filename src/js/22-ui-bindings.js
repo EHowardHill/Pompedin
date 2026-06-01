@@ -194,28 +194,35 @@
     VF._eyeDropperAbort = null;
 
     VF.pickScreenColor = function (targetInputId) {
-        if (!window.EyeDropper) {
-            VF.toast("EyeDropper API is not supported in this browser.");
+        // Native screen picker (WebView2 / Windows only)
+        if (window.EyeDropper) {
+            VF.abortEyeDropper();
+            var controller = new AbortController();
+            VF._eyeDropperAbort = controller;
+            new EyeDropper().open({ signal: controller.signal })
+                .then(function (r) { VF._eyeDropperAbort = null; $(targetInputId).val(r.sRGBHex).trigger('input'); })
+                .catch(function (e) { VF._eyeDropperAbort = null; if (e.name !== 'AbortError') console.log(e); });
             return;
         }
 
-        // Cancel any already-open picker before opening a new one
-        VF.abortEyeDropper();
-
-        var controller = new AbortController();
-        VF._eyeDropperAbort = controller;
-
-        var eyeDropper = new EyeDropper();
-        eyeDropper.open({ signal: controller.signal }).then(function (result) {
-            VF._eyeDropperAbort = null;
-            $(targetInputId).val(result.sRGBHex).trigger('input');
-        }).catch(function (e) {
-            VF._eyeDropperAbort = null;
-            // DOMException "AbortError" is expected when we cancel programmatically
-            if (e.name !== 'AbortError') {
-                console.log("Eyedropper canceled:", e);
-            }
-        });
+        // Fallback: one-shot canvas sample (macOS WKWebView / Linux WebKitGTK)
+        var cvs = VF.cvs;
+        VF.toast('Click the canvas to sample a color');
+        cvs.style.cursor = 'crosshair';
+        function sample(ev) {
+            cvs.removeEventListener('pointerdown', sample, true);
+            cvs.style.cursor = '';
+            var rect = cvs.getBoundingClientRect();
+            var x = Math.round((ev.clientX - rect.left) * (cvs.width / rect.width));
+            var y = Math.round((ev.clientY - rect.top) * (cvs.height / rect.height));
+            var d = cvs.getContext('2d').getImageData(x, y, 1, 1).data;
+            var hex = '#' + [d[0], d[1], d[2]].map(function (n) {
+                return ('0' + n.toString(16)).slice(-2);
+            }).join('');
+            $(targetInputId).val(hex).trigger('input');
+            ev.preventDefault(); ev.stopPropagation();
+        }
+        cvs.addEventListener('pointerdown', sample, true);
     };
 
     VF.abortEyeDropper = function () {

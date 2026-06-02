@@ -99,7 +99,7 @@
     VF.smoothTol = function () { return [0, 0.5, 2, 5, 10, 22][VF.S.cfg.smooth] || 5; };
 
     VF.isPanInput = function (ev) {
-        return ev.button === 1 || ev.button === 2 || (ev.pointerType === 'pen' && ev.button === 5);
+        return ev.button === 2 || (ev.pointerType === 'pen' && ev.button === 5);
     };
 
     VF.toast = function (msg) {

@@ -18,6 +18,14 @@
 <body>
     <div id="app">
 
+        <!-- ═══════════════════════════════════════════════════
+     POMPEDIN RIBBON  (rewritten)
+     Replace the entire <div id="top-bar"> … </div> block
+     in src/index.html with the markup below.
+     Requires the rules in ribbon-refinement.css.
+     All IDs / data-* attributes / options are unchanged.
+     ═══════════════════════════════════════════════════ -->
+
         <div id="top-bar">
             <div class="ribbon-tabs">
                 <div class="ribbon-tab active" data-tab="tab-home">Home</div>
@@ -26,21 +34,26 @@
                 <div class="ribbon-tab" data-tab="tab-project">Project</div>
                 <div class="ribbon-tab" data-tab="tab-workspace">Workspace</div>
                 <div class="ribbon-tab" data-tab="tab-export">Export</div>
+                <button class="tb ribbon-toggle" id="btn-ribbon-toggle" data-tip="Collapse ribbon"
+                    title="Collapse ribbon">
+                    <i class="fa-solid fa-chevron-up"></i>
+                </button>
             </div>
 
             <div class="ribbon-content">
 
+                <!-- ░░░░░░░░░░░░░░░░░ HOME ░░░░░░░░░░░░░░░░░ -->
                 <div id="tab-home" class="ribbon-panel active">
+
                     <div class="ribbon-group">
-                        <div class="ribbon-row">
+                        <div class="ribbon-row rib-row-2up">
                             <button class="tb tb-wide" id="btn-new" data-tip="New Project">📄 New</button>
-                            <button class="tb tb-wide" id="btn-load" data-tip="Load Project" style="margin-left:6px">📂
-                                Load</button>
+                            <button class="tb tb-wide" id="btn-load" data-tip="Load Project">📂 Load</button>
                         </div>
-                        <div class="ribbon-row">
+                        <div class="ribbon-row rib-row-2up">
                             <button class="tb tb-wide" id="btn-save" data-tip="Save Project (Ctrl+S)">💾 Save</button>
-                            <button class="tb tb-wide" id="btn-save-as" data-tip="Save As (Ctrl+Shift+S)"
-                                style="margin-left:6px">📝 Save As</button>
+                            <button class="tb tb-wide" id="btn-save-as" data-tip="Save As (Ctrl+Shift+S)">📝 Save
+                                As</button>
                         </div>
                         <div class="ribbon-group-label">File</div>
                     </div>
@@ -49,10 +62,10 @@
 
                     <div class="ribbon-group">
                         <div class="ribbon-row">
-                            <button class="tb tb-wide" id="btn-undo" data-tip="Undo (Ctrl+Z)">↶ Undo</button>
+                            <button class="tb tb-wide rib-full" id="btn-undo" data-tip="Undo (Ctrl+Z)">↶ Undo</button>
                         </div>
                         <div class="ribbon-row">
-                            <button class="tb tb-wide" id="btn-redo" data-tip="Redo (Ctrl+Y)">↷ Redo</button>
+                            <button class="tb tb-wide rib-full" id="btn-redo" data-tip="Redo (Ctrl+Y)">↷ Redo</button>
                         </div>
                         <div class="ribbon-group-label">History</div>
                     </div>
@@ -61,30 +74,32 @@
 
                     <div class="ribbon-group">
                         <div class="ribbon-row">
-                            <span style="font-size:10px;color:var(--text-dim);width:36px">Stroke</span>
+                            <span class="rib-lbl">Stroke</span>
                             <div class="tgl on" id="tgl-stroke"></div>
-                            <input type="color" id="clr-stroke" value="#000000" class="csw" style="padding:0">
-                            <button class="tb" id="btn-pick-stroke" style="padding:0 4px;font-size:12px;margin-left:4px"
-                                data-tip="Pick Color (Screen)"><i class="fa-solid fa-eye-dropper"></i></button>
+                            <input type="color" id="clr-stroke" value="#000000" class="csw">
+                            <button class="tb rib-ico" id="btn-pick-stroke" data-tip="Pick Color (Screen)"><i
+                                    class="fa-solid fa-eye-dropper"></i></button>
                         </div>
                         <div class="ribbon-row">
-                            <span style="font-size:10px;color:var(--text-dim);width:36px">Fill</span>
+                            <span class="rib-lbl">Fill</span>
                             <div class="tgl" id="tgl-fill"></div>
-                            <input type="color" id="clr-fill" value="#4a6fff" class="csw" style="padding:0">
-                            <button class="tb" id="btn-pick-fill" style="padding:0 4px;font-size:12px;margin-left:4px"
-                                data-tip="Pick Color (Screen)"><i class="fa-solid fa-eye-dropper"></i></button>
+                            <input type="color" id="clr-fill" value="#4a6fff" class="csw">
+                            <button class="tb rib-ico" id="btn-pick-fill" data-tip="Pick Color (Screen)"><i
+                                    class="fa-solid fa-eye-dropper"></i></button>
                         </div>
-                        <div class="ribbon-group-label">Colors & Style</div>
+                        <div class="ribbon-group-label">Colors &amp; Style</div>
                     </div>
 
                     <div class="div-v-ribbon"></div>
 
                     <div class="ribbon-group">
                         <div class="ribbon-row">
-                            <button class="tb tb-wide" id="btn-zfront" data-tip="Bring to Front">▲ To Front</button>
+                            <button class="tb tb-wide rib-full" id="btn-zfront" data-tip="Bring to Front">▲ To
+                                Front</button>
                         </div>
                         <div class="ribbon-row">
-                            <button class="tb tb-wide" id="btn-zback" data-tip="Push to Back">▼ To Back</button>
+                            <button class="tb tb-wide rib-full" id="btn-zback" data-tip="Push to Back">▼ To
+                                Back</button>
                         </div>
                         <div class="ribbon-group-label">Z-Order</div>
                     </div>
@@ -93,52 +108,48 @@
 
                     <div class="ribbon-group">
                         <div class="ribbon-row">
-                            <button class="tb tb-wide" id="btn-about" data-tip="About Pompedin">
-                                <i class="fa-solid fa-circle-info" style="margin-right:3px"></i> About
-                            </button>
+                            <button class="tb tb-wide rib-full" id="btn-about" data-tip="About Pompedin"><i
+                                    class="fa-solid fa-circle-info"></i> About</button>
                         </div>
                         <div class="ribbon-row">
-                            <button class="tb tb-wide" id="btn-help" data-tip="Open Documentation">
-                                <i class="fa-solid fa-book" style="margin-right:3px"></i> Help
-                            </button>
+                            <button class="tb tb-wide rib-full" id="btn-help" data-tip="Open Documentation"><i
+                                    class="fa-solid fa-book"></i> Help</button>
                         </div>
                         <div class="ribbon-group-label">Info</div>
                     </div>
                 </div>
 
+                <!-- ░░░░░░░░░░░░░░░░░ BRUSH ░░░░░░░░░░░░░░░░░ -->
                 <div id="tab-brush" class="ribbon-panel">
 
-                    <div class="ribbon-group" style="opacity:0.8;">
+                    <div class="ribbon-group">
                         <div class="ribbon-row">
-                            <span style="font-size:10px;color:var(--text-dim);width:48px">Smooth</span>
-                            <input type="range" id="rng-smooth" min="1" max="5" value="3" style="width:50px">
-                            <input type="number" id="v-smooth" class="sm-in" min="1" max="5" value="3"
-                                style="width:34px;margin-left:4px">
+                            <span class="rib-lbl">Smooth</span>
+                            <input type="range" class="rib-slider" id="rng-smooth" min="1" max="5" value="3">
+                            <input type="number" class="sm-in rib-num" id="v-smooth" min="1" max="5" value="3">
                         </div>
-                        <div class="ribbon-row" style="height: 28px;">
-                            <span style="font-size:10px;color:var(--text-dim);width:48px">Pressure</span>
+                        <div class="ribbon-row">
+                            <span class="rib-lbl">Pressure</span>
                             <div class="tgl" id="tgl-pressure" data-tip="Tablet Pressure"></div>
                         </div>
-                        <div class="ribbon-group-label" style="color:var(--accent);opacity:0.6;">New Stroke Only</div>
+                        <div class="ribbon-group-label" style="color:var(--accent)">New Stroke Only</div>
                     </div>
 
                     <div class="div-v-ribbon"></div>
 
                     <div class="ribbon-group">
                         <div class="ribbon-row">
-                            <span style="font-size:10px;color:var(--text-dim);width:40px">Size</span>
-                            <input type="range" id="rng-brush" min="1" max="60" value="4" style="width:70px">
-                            <input type="number" id="v-brush" class="sm-in" min="1" max="60" value="4"
-                                style="width:34px;margin-left:4px">
+                            <span class="rib-lbl">Size</span>
+                            <input type="range" class="rib-slider" id="rng-brush" min="1" max="60" value="4">
+                            <input type="number" class="sm-in rib-num" id="v-brush" min="1" max="60" value="4">
                         </div>
                         <div class="ribbon-row">
-                            <span style="font-size:10px;color:var(--text-dim);width:40px">Spacing</span>
-                            <input type="range" id="rng-spacing" min="5" max="200" value="50" style="width:70px">
-                            <input type="number" id="v-spacing" class="sm-in" min="5" max="200" value="50"
-                                style="width:34px;margin-left:4px">
+                            <span class="rib-lbl">Spacing</span>
+                            <input type="range" class="rib-slider" id="rng-spacing" min="5" max="200" value="50">
+                            <input type="number" class="sm-in rib-num" id="v-spacing" min="5" max="200" value="50">
                         </div>
-                        <div class="ribbon-row" style="height: 26px;">
-                            <span style="font-size:10px;color:var(--text-dim);width:40px">Guide</span>
+                        <div class="ribbon-row">
+                            <span class="rib-lbl">Guide</span>
                             <div class="tgl on" id="tgl-brush-guide"
                                 data-tip="Show solid path beneath texture while drawing"></div>
                         </div>
@@ -149,22 +160,19 @@
 
                     <div class="ribbon-group">
                         <div class="ribbon-row">
-                            <span style="font-size:10px;color:var(--text-dim);width:36px">Angle</span>
-                            <input type="range" id="rng-rot" min="-180" max="180" value="0" style="width:50px">
-                            <input type="number" id="v-rot" class="sm-in" min="-180" max="180" value="0"
-                                style="width:34px;margin-left:4px">
+                            <span class="rib-lbl">Angle</span>
+                            <input type="range" class="rib-slider" id="rng-rot" min="-180" max="180" value="0">
+                            <input type="number" class="sm-in rib-num" id="v-rot" min="-180" max="180" value="0">
                         </div>
                         <div class="ribbon-row">
-                            <span style="font-size:10px;color:var(--text-dim);width:36px">Rot Jit</span>
-                            <input type="range" id="rng-angjit" min="0" max="100" value="100" style="width:50px">
-                            <input type="number" id="v-angjit" class="sm-in" min="0" max="100" value="100"
-                                style="width:34px;margin-left:4px">
+                            <span class="rib-lbl">Rot Jit</span>
+                            <input type="range" class="rib-slider" id="rng-angjit" min="0" max="100" value="100">
+                            <input type="number" class="sm-in rib-num" id="v-angjit" min="0" max="100" value="100">
                         </div>
                         <div class="ribbon-row">
-                            <span style="font-size:10px;color:var(--text-dim);width:36px">Pos Jit</span>
-                            <input type="range" id="rng-posjit" min="0" max="200" value="0" style="width:50px">
-                            <input type="number" id="v-posjit" class="sm-in" min="0" max="200" value="0"
-                                style="width:34px;margin-left:4px">
+                            <span class="rib-lbl">Pos Jit</span>
+                            <input type="range" class="rib-slider" id="rng-posjit" min="0" max="200" value="0">
+                            <input type="number" class="sm-in rib-num" id="v-posjit" min="0" max="200" value="0">
                         </div>
                         <div class="ribbon-group-label">Brush Dynamics</div>
                     </div>
@@ -172,43 +180,36 @@
                     <div class="div-v-ribbon"></div>
 
                     <div class="ribbon-group">
-                        <div class="ribbon-row" style="align-items: center;">
-                            <select id="sel-tex"
-                                style="background:var(--bg-dark);border:1px solid var(--border);color:var(--text-primary);font-size:11px;padding:4px 6px;border-radius:4px;width:140px;outline:none;cursor:pointer;">
+                        <div class="ribbon-row">
+                            <select id="sel-tex" class="rib-sel" style="width:150px">
                                 <option value="none">N/A</option>
                             </select>
-                            <button class="tb" id="btn-refresh-brushes"
-                                style="width:24px;height:24px;font-size:11px;margin-left:2px"
-                                data-tip="Refresh brush list"><i class="fa-solid fa-arrows-rotate"></i></button>
+                            <button class="tb rib-ico" id="btn-refresh-brushes" data-tip="Refresh brush list"><i
+                                    class="fa-solid fa-arrows-rotate"></i></button>
                         </div>
                         <div class="ribbon-row">
-                            <button class="tb tb-wide" id="btn-open-brush-folder" style="font-size:10px"
-                                data-tip="Open brush folder in file explorer">
-                                <i class="fa-solid fa-folder-open" style="margin-right:3px"></i> Open Folder
-                            </button>
+                            <button class="tb tb-wide rib-full" id="btn-open-brush-folder"
+                                data-tip="Open brush folder in file explorer"><i class="fa-solid fa-folder-open"></i>
+                                Open Folder</button>
                         </div>
                         <div class="ribbon-group-label">Brush Texture</div>
                     </div>
 
                     <div class="div-v-ribbon"></div>
 
-                    <div class="ribbon-group" style="min-width:440px;">
-                        <div style="display:flex;gap:8px;height:100%;">
-                            <div
-                                style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;justify-content:center;min-width:120px;">
-                                <div class="ribbon-row" style="height:26px;">
-                                    <span style="font-size:10px;color:var(--text-dim);width:36px">Onion</span>
+                    <div class="ribbon-group" style="min-width:440px">
+                        <div class="onion-ribbon-wrap">
+                            <div class="onion-ribbon-controls">
+                                <div class="ribbon-row">
+                                    <span class="rib-lbl">Onion</span>
                                     <div class="tgl" id="tgl-onion"></div>
                                 </div>
-                                <div class="ribbon-row" style="height:22px;">
-                                    <label
-                                        style="font-size:10px;color:var(--text-dim);display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap">
-                                        <input type="checkbox" id="chk-onion-isolate" style="margin:0"> Isolate Layer
-                                    </label>
+                                <div class="ribbon-row">
+                                    <label class="rib-check"><input type="checkbox" id="chk-onion-isolate"> Isolate
+                                        Layer</label>
                                 </div>
-                                <div class="ribbon-row" style="height:22px;">
-                                    <button class="tb tb-wide" id="btn-add-onion"
-                                        style="font-size:10px;height:22px;padding:0 8px;color:var(--accent)">+ Add
+                                <div class="ribbon-row">
+                                    <button class="tb tb-wide rib-full rib-act accent" id="btn-add-onion">+ Add
                                         Rule</button>
                                 </div>
                             </div>
@@ -216,39 +217,32 @@
                         </div>
                         <div class="ribbon-group-label">Onion Skin</div>
                     </div>
-
                 </div>
 
+                <!-- ░░░░░░░░░░░░░░░░░ TOOLS ░░░░░░░░░░░░░░░░░ -->
                 <div id="tab-tools" class="ribbon-panel">
 
-                    <div class="ribbon-group" style="min-width:220px;">
-                        <div class="ribbon-row">
-                            <span style="font-size:10px;color:var(--text-dim);width:16px">X</span>
-                            <input class="sm-in" id="cam-x" type="number" step="1" value="320" style="width:50px">
-                            <span style="font-size:10px;color:var(--text-dim);width:16px;margin-left:4px">Y</span>
-                            <input class="sm-in" id="cam-y" type="number" step="1" value="240" style="width:50px">
-                        </div>
-                        <div class="ribbon-row">
-                            <span style="font-size:10px;color:var(--text-dim);width:16px">Z</span>
+                    <div class="ribbon-group">
+                        <div class="cam-grid">
+                            <span class="rib-lbl xs">X</span>
+                            <input class="sm-in" id="cam-x" type="number" step="1" value="320">
+                            <span></span>
+                            <span class="rib-lbl xs">Y</span>
+                            <input class="sm-in" id="cam-y" type="number" step="1" value="240">
+                            <span></span>
+                            <span class="rib-lbl xs">Z</span>
                             <input class="sm-in" id="cam-zoom" type="number" min="10" max="1000" step="5" value="100"
-                                style="width:50px" title="Zoom %">
-                            <span style="font-size:9px;color:var(--text-dim)">%</span>
-                            <span style="font-size:10px;color:var(--text-dim);width:16px;margin-left:4px">R</span>
-                            <input class="sm-in" id="cam-rot" type="number" step="1" value="0" style="width:42px"
-                                title="Rotation °">
-                            <span style="font-size:9px;color:var(--text-dim)">°</span>
+                                title="Zoom %">
+                            <span class="rib-unit">%</span>
+                            <span class="rib-lbl xs">R</span>
+                            <input class="sm-in" id="cam-rot" type="number" step="1" value="0" title="Rotation °">
+                            <span class="rib-unit">°</span>
                         </div>
                         <div class="ribbon-row">
-                            <button class="tb tb-wide" id="btn-cam-setkey"
-                                style="font-size:10px;height:22px;padding:0 6px;color:var(--accent)">◆ Set Key</button>
-                            <button class="tb tb-wide" id="btn-cam-delkey"
-                                style="font-size:10px;height:22px;padding:0 6px;color:var(--warning);margin-left:2px">×
-                                Del Key</button>
-                            <button class="tb tb-wide" id="btn-cam-reset"
-                                style="font-size:10px;height:22px;padding:0 6px;margin-left:2px">Reset</button>
-                            <button class="tb tb-wide" id="btn-cam-clear-all"
-                                style="font-size:10px;height:22px;padding:0 6px;color:var(--warning);margin-left:2px">Clear
-                                All</button>
+                            <button class="tb tb-wide rib-act accent" id="btn-cam-setkey">◆ Set Key</button>
+                            <button class="tb tb-wide rib-act warn" id="btn-cam-delkey">× Del Key</button>
+                            <button class="tb tb-wide rib-act" id="btn-cam-reset">Reset</button>
+                            <button class="tb tb-wide rib-act warn" id="btn-cam-clear-all">Clear All</button>
                         </div>
                         <div class="ribbon-group-label">Camera</div>
                     </div>
@@ -256,25 +250,23 @@
                     <div class="div-v-ribbon"></div>
 
                     <div class="ribbon-group">
-                        <div class="ribbon-row" style="height:26px;">
-                            <span style="font-size:10px;color:var(--text-dim);width:36px">Sym H</span>
+                        <div class="ribbon-row">
+                            <span class="rib-lbl">Sym H</span>
                             <div class="tgl" id="tgl-sym-h" data-tip="Mirror strokes across vertical axis"></div>
-                            <span style="font-size:9px;color:var(--text-dim);margin-left:4px">X</span>
-                            <input class="sm-in" id="in-sym-h-pos" type="number" min="0" max="9999" value="320"
-                                style="width:42px;margin-left:2px" title="Horizontal axis X position">
+                            <span class="rib-lbl xs">X</span>
+                            <input class="sm-in rib-num" id="in-sym-h-pos" type="number" min="0" max="9999" value="320"
+                                title="Horizontal axis X position">
                         </div>
-                        <div class="ribbon-row" style="height:26px;">
-                            <span style="font-size:10px;color:var(--text-dim);width:36px">Sym V</span>
+                        <div class="ribbon-row">
+                            <span class="rib-lbl">Sym V</span>
                             <div class="tgl" id="tgl-sym-v" data-tip="Mirror strokes across horizontal axis"></div>
-                            <span style="font-size:9px;color:var(--text-dim);margin-left:4px">Y</span>
-                            <input class="sm-in" id="in-sym-v-pos" type="number" min="0" max="9999" value="240"
-                                style="width:42px;margin-left:2px" title="Vertical axis Y position">
+                            <span class="rib-lbl xs">Y</span>
+                            <input class="sm-in rib-num" id="in-sym-v-pos" type="number" min="0" max="9999" value="240"
+                                title="Vertical axis Y position">
                         </div>
-                        <div class="ribbon-row" style="height:22px;opacity:0.7;">
-                            <i class="fa-solid fa-circle-info"
-                                style="font-size:9px;color:var(--text-dim);margin-right:4px"></i>
-                            <span style="font-size:9px;color:var(--text-dim);white-space:nowrap">Mirrors around axis
-                                position</span>
+                        <div class="ribbon-row rib-hint">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <span>Mirrors around axis position</span>
                         </div>
                         <div class="ribbon-group-label">Symmetry</div>
                     </div>
@@ -282,22 +274,18 @@
                     <div class="div-v-ribbon"></div>
 
                     <div class="ribbon-group">
-                        <div class="ribbon-row">
+                        <div class="ribbon-row rib-row-2up">
                             <button class="tb tb-wide" id="btn-path-simplify"
-                                data-tip="Reduce point count on selected paths">
-                                <i class="fa-solid fa-bezier-curve" style="margin-right:2px;font-size:10px"></i>
-                                Simplify
-                            </button>
-                            <button class="tb tb-wide" id="btn-path-smooth" data-tip="Smooth selected paths"
-                                style="margin-left:4px">
-                                <i class="fa-solid fa-wave-square" style="margin-right:2px;font-size:10px"></i> Smooth
-                            </button>
+                                data-tip="Reduce point count on selected paths"><i class="fa-solid fa-bezier-curve"></i>
+                                Simplify</button>
+                            <button class="tb tb-wide" id="btn-path-smooth" data-tip="Smooth selected paths"><i
+                                    class="fa-solid fa-wave-square"></i> Smooth</button>
                         </div>
-                        <div class="ribbon-row">
+                        <div class="ribbon-row rib-row-2up">
                             <button class="tb tb-wide" id="btn-path-close"
                                 data-tip="Close open path endpoints">Close</button>
-                            <button class="tb tb-wide" id="btn-path-reverse" data-tip="Reverse winding direction"
-                                style="margin-left:4px">Reverse</button>
+                            <button class="tb tb-wide" id="btn-path-reverse"
+                                data-tip="Reverse winding direction">Reverse</button>
                         </div>
                         <div class="ribbon-group-label">Path Tools</div>
                     </div>
@@ -305,21 +293,17 @@
                     <div class="div-v-ribbon"></div>
 
                     <div class="ribbon-group">
-                        <div class="ribbon-row">
-                            <button class="tb tb-wide" id="btn-bool-unite" data-tip="Combine 2 closed paths (Union)">
-                                <i class="fa-solid fa-object-group" style="margin-right:2px;font-size:10px"></i> Union
-                            </button>
-                            <button class="tb tb-wide" id="btn-bool-subtract" data-tip="Subtract 2nd from 1st path"
-                                style="margin-left:4px">
-                                <i class="fa-solid fa-object-ungroup" style="margin-right:2px;font-size:10px"></i>
-                                Subtract
-                            </button>
+                        <div class="ribbon-row rib-row-2up">
+                            <button class="tb tb-wide" id="btn-bool-unite" data-tip="Combine 2 closed paths (Union)"><i
+                                    class="fa-solid fa-object-group"></i> Union</button>
+                            <button class="tb tb-wide" id="btn-bool-subtract" data-tip="Subtract 2nd from 1st path"><i
+                                    class="fa-solid fa-object-ungroup"></i> Subtract</button>
                         </div>
-                        <div class="ribbon-row">
+                        <div class="ribbon-row rib-row-2up">
                             <button class="tb tb-wide" id="btn-bool-intersect"
                                 data-tip="Keep overlapping area only">Intersect</button>
-                            <button class="tb tb-wide" id="btn-bool-exclude" data-tip="Keep non-overlapping areas"
-                                style="margin-left:4px">Exclude</button>
+                            <button class="tb tb-wide" id="btn-bool-exclude"
+                                data-tip="Keep non-overlapping areas">Exclude</button>
                         </div>
                         <div class="ribbon-group-label">Boolean Ops</div>
                     </div>
@@ -328,21 +312,15 @@
 
                     <div class="ribbon-group">
                         <div class="ribbon-row">
-                            <button class="tb tb-wide" id="btn-flip-h" data-tip="Flip selection horizontally">
-                                <i class="fa-solid fa-left-right" style="margin-right:2px;font-size:10px"></i> Flip H
-                            </button>
-                            <button class="tb tb-wide" id="btn-flip-v" data-tip="Flip selection vertically"
-                                style="margin-left:4px">
-                                <i class="fa-solid fa-up-down" style="margin-right:2px;font-size:10px"></i> Flip V
-                            </button>
-                            <button class="tb tb-wide" id="btn-sel-all" data-tip="Select All (Ctrl+A)"
-                                style="margin-left:4px">
-                                <i class="fa-solid fa-object-group" style="margin-right:2px;font-size:10px"></i> All
-                            </button>
+                            <button class="tb tb-wide" id="btn-flip-h" data-tip="Flip selection horizontally"><i
+                                    class="fa-solid fa-left-right"></i> Flip H</button>
+                            <button class="tb tb-wide" id="btn-flip-v" data-tip="Flip selection vertically"><i
+                                    class="fa-solid fa-up-down"></i> Flip V</button>
+                            <button class="tb tb-wide" id="btn-sel-all" data-tip="Select All (Ctrl+A)"><i
+                                    class="fa-solid fa-object-group"></i> All</button>
                         </div>
                         <div class="ribbon-row">
-                            <select id="sel-align"
-                                style="background:var(--bg-dark);border:1px solid var(--border);color:var(--text-primary);font-size:10px;padding:2px 4px;border-radius:4px;width:80px;outline:none;cursor:pointer;height:22px;">
+                            <select id="sel-align" class="rib-sel" style="width:84px">
                                 <option value="left">Left</option>
                                 <option value="centerH">Center H</option>
                                 <option value="right">Right</option>
@@ -350,12 +328,12 @@
                                 <option value="centerV">Center V</option>
                                 <option value="bottom">Bottom</option>
                             </select>
-                            <button class="tb tb-wide" id="btn-align" data-tip="Align selected items"
-                                style="margin-left:4px;height:22px;font-size:10px">Align</button>
-                            <button class="tb tb-wide" id="btn-dist-h" data-tip="Distribute horizontally"
-                                style="margin-left:4px;height:22px;font-size:10px">D·H</button>
-                            <button class="tb tb-wide" id="btn-dist-v" data-tip="Distribute vertically"
-                                style="margin-left:2px;height:22px;font-size:10px">D·V</button>
+                            <button class="tb tb-wide rib-act" id="btn-align"
+                                data-tip="Align selected items">Align</button>
+                            <button class="tb tb-wide rib-act" id="btn-dist-h"
+                                data-tip="Distribute horizontally">D·H</button>
+                            <button class="tb tb-wide rib-act" id="btn-dist-v"
+                                data-tip="Distribute vertically">D·V</button>
                         </div>
                         <div class="ribbon-group-label">Selection</div>
                     </div>
@@ -363,43 +341,41 @@
                     <div class="div-v-ribbon"></div>
 
                     <div class="ribbon-group">
-                        <div class="ribbon-row" style="height:26px;">
-                            <span style="font-size:10px;color:var(--text-dim);width:26px">Grid</span>
+                        <div class="ribbon-row">
+                            <span class="rib-lbl sm">Grid</span>
                             <div class="tgl" id="tgl-show-grid" data-tip="Toggle pixel grid overlay"></div>
-                            <input class="sm-in" id="in-grid-size" type="number" min="4" max="256" value="16"
-                                style="width:34px;margin-left:6px" title="Grid spacing (px)">
-                            <span style="font-size:9px;color:var(--text-dim);margin-left:2px">px</span>
+                            <input class="sm-in rib-num" id="in-grid-size" type="number" min="4" max="256" value="16"
+                                title="Grid spacing (px)">
+                            <span class="rib-unit">px</span>
                         </div>
-                        <div class="ribbon-row" style="height:26px;">
-                            <span style="font-size:10px;color:var(--text-dim);width:26px">Safe</span>
+                        <div class="ribbon-row">
+                            <span class="rib-lbl sm">Safe</span>
                             <div class="tgl" id="tgl-safe-zone" data-tip="Broadcast safe zone overlay"></div>
-                            <span style="font-size:10px;color:var(--text-dim);width:32px;margin-left:6px">⊕ 3rds</span>
+                            <span class="rib-lbl" style="width:42px">⊕ 3rds</span>
                             <div class="tgl" id="tgl-center-mark" data-tip="Center crosshair + rule of thirds"></div>
                         </div>
-                        <div class="ribbon-row" style="height:26px;">
-                            <span style="font-size:10px;color:var(--text-dim);width:26px">Vis</span>
-                            <input type="range" id="rng-guide-opacity" min="5" max="100" value="50" style="width:60px"
+                        <div class="ribbon-row">
+                            <span class="rib-lbl sm">Vis</span>
+                            <input type="range" class="rib-slider" id="rng-guide-opacity" min="5" max="100" value="50"
                                 title="Guide visibility">
-                            <span id="v-guide-opacity"
-                                style="font-size:9px;color:var(--text-dim);width:26px;margin-left:4px;text-align:right">50%</span>
+                            <span id="v-guide-opacity" class="rib-unit" style="width:26px;text-align:right">50%</span>
                         </div>
                         <div class="ribbon-group-label">Canvas Guides</div>
                     </div>
-
                 </div>
 
+                <!-- ░░░░░░░░░░░░░░░░░ PROJECT ░░░░░░░░░░░░░░░░░ -->
                 <div id="tab-project" class="ribbon-panel">
 
-                    <div class="ribbon-group">
+                    <div class="ribbon-group rib-grp-stretch">
                         <div class="ribbon-row">
-                            <span style="font-size:10px;color:var(--text-dim);width:36px">W</span>
-                            <input class="sm-in" id="pref-w" type="number" min="1" value="640" style="width:52px">
-                            <span style="font-size:10px;color:var(--text-dim);width:20px;margin-left:6px">H</span>
-                            <input class="sm-in" id="pref-h" type="number" min="1" value="480" style="width:52px">
+                            <span class="rib-lbl xs">W</span>
+                            <input class="sm-in rib-num lg" id="pref-w" type="number" min="1" value="640">
+                            <span class="rib-lbl xs">H</span>
+                            <input class="sm-in rib-num lg" id="pref-h" type="number" min="1" value="480">
                         </div>
                         <div class="ribbon-row">
-                            <select id="pref-preset"
-                                style="background:var(--bg-dark);border:1px solid var(--border);color:var(--text-primary);font-size:10px;padding:3px 4px;border-radius:4px;width:160px;outline:none;cursor:pointer;height:24px;">
+                            <select id="pref-preset" class="rib-sel" style="width:100%">
                                 <option value="">Custom</option>
                                 <option value="320x240">QVGA (320×240)</option>
                                 <option value="640x480" selected>VGA (640×480)</option>
@@ -415,14 +391,12 @@
 
                     <div class="ribbon-group">
                         <div class="ribbon-row">
-                            <span style="font-size:10px;color:var(--text-dim);width:52px">End Frame</span>
-                            <input class="sm-in" id="pref-end" type="number" min="1" max="999" value="24"
-                                style="width:46px">
+                            <span class="rib-lbl lg">End Frame</span>
+                            <input class="sm-in rib-num" id="pref-end" type="number" min="1" max="999" value="24">
                         </div>
                         <div class="ribbon-row">
-                            <span style="font-size:10px;color:var(--text-dim);width:52px">FPS</span>
-                            <input class="sm-in" id="pref-fps" type="number" min="1" max="60" value="12"
-                                style="width:46px">
+                            <span class="rib-lbl lg">FPS</span>
+                            <input class="sm-in rib-num" id="pref-fps" type="number" min="1" max="60" value="12">
                         </div>
                         <div class="ribbon-group-label">Timing</div>
                     </div>
@@ -430,152 +404,46 @@
                     <div class="div-v-ribbon"></div>
 
                     <div class="ribbon-group">
-                        <div class="ribbon-row" style="height: 28px;">
-                            <span style="font-size:10px;color:var(--text-dim);width:36px">Grain</span>
+                        <div class="ribbon-row">
+                            <span class="rib-lbl">Grain</span>
                             <div class="tgl" id="tgl-grain" data-tip="Toggle Film Grain"></div>
                         </div>
                         <div class="ribbon-row">
-                            <span style="font-size:10px;color:var(--text-dim);width:36px">Amt</span>
-                            <input type="range" id="rng-grain" min="1" max="100" value="10" style="width:60px">
-                            <input type="number" id="v-grain" class="sm-in" min="1" max="100" value="10"
-                                style="width:34px;margin-left:4px">
+                            <span class="rib-lbl">Amt</span>
+                            <input type="range" class="rib-slider" id="rng-grain" min="1" max="100" value="10">
+                            <input type="number" class="sm-in rib-num" id="v-grain" min="1" max="100" value="10">
                         </div>
                         <div class="ribbon-group-label">Effects</div>
                     </div>
 
                     <div class="div-v-ribbon"></div>
 
-                    <div class="ribbon-group">
+                    <div class="ribbon-group rib-grp-stretch" style="min-width:170px">
                         <div class="ribbon-row">
-                            <button class="tb tb-wide" id="btn-load-audio" style="font-size:10px;color:var(--accent)"
-                                data-tip="Load Audio Track">
-                                <i class="fa-solid fa-music" style="margin-right:3px"></i> Load Audio
-                            </button>
-                            <button class="tb" id="btn-remove-audio"
-                                style="width:24px;height:24px;font-size:14px;color:var(--warning);margin-left:4px"
-                                data-tip="Remove Audio">×</button>
+                            <button class="tb tb-wide rib-act accent rib-grow" id="btn-load-audio"
+                                data-tip="Load Audio Track"><i class="fa-solid fa-music"></i> Load Audio</button>
+                            <button class="tb rib-ico warn" id="btn-remove-audio" data-tip="Remove Audio">×</button>
                         </div>
-                        <div class="ribbon-row" style="margin-top: 4px;">
-                            <span id="audio-label"
-                                style="font-size:9px;color:var(--text-dim);width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
-                                title="No audio">No audio</span>
-                            <input type="range" id="rng-audio-vol" min="0" max="100" value="80"
-                                style="width:45px;margin-left:4px" title="Audio Volume">
-                            <span id="v-audio-vol"
-                                style="font-size:9px;color:var(--text-dim);width:24px;margin-left:4px;text-align:right;">80%</span>
+                        <div class="ribbon-row">
+                            <span id="audio-label" class="rib-audio-name" title="No audio">No audio</span>
+                        </div>
+                        <div class="ribbon-row">
+                            <span class="rib-lbl sm">Vol</span>
+                            <input type="range" class="rib-slider" id="rng-audio-vol" min="0" max="100" value="80"
+                                title="Audio Volume">
+                            <span id="v-audio-vol" class="rib-unit" style="width:26px;text-align:right">80%</span>
                         </div>
                         <div class="ribbon-group-label">Sound Track</div>
                     </div>
-
                 </div>
 
-                <div id="tab-export" class="ribbon-panel">
-
-                    <div class="ribbon-group">
-                        <div class="ribbon-row">
-                            <button class="tb tb-wide" id="btn-export-png" data-tip="Export current frame as PNG">
-                                <i class="fa-solid fa-image" style="margin-right:3px"></i> Frame (PNG)
-                            </button>
-                        </div>
-                        <div class="ribbon-row">
-                            <button class="tb tb-wide" id="btn-export-seq"
-                                data-tip="Export frame range as numbered PNGs">
-                                <i class="fa-solid fa-images" style="margin-right:3px"></i> Sequence
-                            </button>
-                        </div>
-                        <div class="ribbon-group-label">Single Frame</div>
-                    </div>
-
-                    <div class="div-v-ribbon"></div>
-
-                    <div class="ribbon-group">
-                        <div class="ribbon-row">
-                            <button class="tb tb-wide" id="btn-export-mp4" data-tip="Export animation as MP4 video">
-                                <i class="fa-solid fa-film" style="margin-right:3px"></i> Video (MP4)
-                            </button>
-                        </div>
-                        <div class="ribbon-row">
-                            <button class="tb tb-wide" id="btn-export-gif" data-tip="Export animation as animated GIF">
-                                <i class="fa-solid fa-clapperboard" style="margin-right:3px"></i> Animated GIF
-                            </button>
-                        </div>
-                        <div class="ribbon-group-label">Animation</div>
-                    </div>
-
-                    <div class="div-v-ribbon"></div>
-
-                    <div class="ribbon-group">
-                        <div class="ribbon-row">
-                            <span style="font-size:10px;color:var(--text-dim);width:28px">Cols</span>
-                            <input class="sm-in" id="export-sheet-cols" type="number" min="1" max="100" value="8"
-                                style="width:38px">
-                            <span style="font-size:10px;color:var(--text-dim);width:24px;margin-left:4px">Pad</span>
-                            <input class="sm-in" id="export-sheet-pad" type="number" min="0" max="32" value="0"
-                                style="width:34px">
-                        </div>
-                        <div class="ribbon-row">
-                            <button class="tb tb-wide" id="btn-export-sheet"
-                                data-tip="Export all frames tiled in one PNG">
-                                <i class="fa-solid fa-table-cells" style="margin-right:3px"></i> Spritesheet
-                            </button>
-                        </div>
-                        <div class="ribbon-group-label">Spritesheet</div>
-                    </div>
-
-                    <div class="div-v-ribbon"></div>
-
-                    <div class="ribbon-group">
-                        <div class="ribbon-row">
-                            <span style="font-size:10px;color:var(--text-dim);width:30px">From</span>
-                            <input class="sm-in" id="export-from" type="number" min="1" value="1" style="width:38px">
-                            <span style="font-size:10px;color:var(--text-dim);width:18px;margin-left:4px">To</span>
-                            <input class="sm-in" id="export-to" type="number" min="1" value="24" style="width:38px">
-                        </div>
-                        <div class="ribbon-row">
-                            <span style="font-size:10px;color:var(--text-dim);width:30px">Scale</span>
-                            <select id="export-scale"
-                                style="background:var(--bg-dark);border:1px solid var(--border);color:var(--text-primary);font-size:10px;padding:3px 4px;border-radius:4px;width:84px;outline:none;cursor:pointer;height:24px;">
-                                <option value="0.25">25%</option>
-                                <option value="0.5">50%</option>
-                                <option value="0.75">75%</option>
-                                <option value="1" selected>100%</option>
-                                <option value="1.5">150%</option>
-                                <option value="2">200%</option>
-                            </select>
-                        </div>
-                        <div class="ribbon-group-label">Range & Scale</div>
-                    </div>
-
-                    <div class="div-v-ribbon"></div>
-
-                    <div class="ribbon-group">
-                        <div class="ribbon-row" style="height:28px;">
-                            <span style="font-size:10px;color:var(--text-dim);width:34px">Loop</span>
-                            <div class="tgl on" id="tgl-gif-loop" data-tip="Infinite loop"></div>
-                            <span style="font-size:10px;color:var(--text-dim);width:34px;margin-left:6px">Dither</span>
-                            <div class="tgl" id="tgl-gif-dither" data-tip="Ordered dithering"></div>
-                        </div>
-                        <div class="ribbon-row">
-                            <span style="font-size:10px;color:var(--text-dim);width:34px">Colors</span>
-                            <select id="export-gif-colors"
-                                style="background:var(--bg-dark);border:1px solid var(--border);color:var(--text-primary);font-size:10px;padding:3px 4px;border-radius:4px;width:64px;outline:none;cursor:pointer;height:24px;">
-                                <option value="32">32</option>
-                                <option value="64">64</option>
-                                <option value="128">128</option>
-                                <option value="256" selected>256</option>
-                            </select>
-                        </div>
-                        <div class="ribbon-group-label">GIF Options</div>
-                    </div>
-
-                </div>
-
+                <!-- ░░░░░░░░░░░░░░░░░ WORKSPACE ░░░░░░░░░░░░░░░░░ -->
                 <div id="tab-workspace" class="ribbon-panel">
+
                     <div class="ribbon-group">
                         <div class="ribbon-row">
-                            <span style="font-size:10px;color:var(--text-dim);width:36px">Theme</span>
-                            <select id="sel-theme"
-                                style="background:var(--bg-dark);border:1px solid var(--border);color:var(--text-primary);font-size:10px;padding:3px 4px;border-radius:4px;width:120px;outline:none;cursor:pointer;height:24px;">
+                            <span class="rib-lbl">Theme</span>
+                            <select id="sel-theme" class="rib-sel" style="width:130px">
                                 <option value="system">System Default</option>
                                 <option value="light">Light Mode</option>
                                 <option value="dark">Dark Mode</option>
@@ -588,14 +456,11 @@
 
                     <div class="ribbon-group">
                         <div class="ribbon-row">
-                            <span style="font-size:10px;color:var(--text-dim);width:36px">Color</span>
-                            <input type="color" id="clr-ws-bg" value="#ffffff" class="csw" style="padding:0">
+                            <span class="rib-lbl">Color</span>
+                            <input type="color" id="clr-ws-bg" value="#ffffff" class="csw">
                         </div>
-                        <div class="ribbon-row" style="margin-top: 4px; height: 16px;">
-                            <label
-                                style="font-size:10px;color:var(--text-dim);display:flex;align-items:center;gap:4px;cursor:pointer;">
-                                <input type="checkbox" id="chk-ws-transparent" style="margin:0"> Transparent
-                            </label>
+                        <div class="ribbon-row">
+                            <label class="rib-check"><input type="checkbox" id="chk-ws-transparent"> Transparent</label>
                         </div>
                         <div class="ribbon-group-label">Canvas Background</div>
                     </div>
@@ -604,14 +469,109 @@
 
                     <div class="ribbon-group">
                         <div class="ribbon-row">
-                            <span style="font-size:10px;color:var(--text-dim);width:36px">Input</span>
-                            <select id="sel-tablet-mode"
-                                style="background:var(--bg-dark);border:1px solid var(--border);color:var(--text-primary);font-size:10px;padding:3px 4px;border-radius:4px;width:130px;outline:none;cursor:pointer;height:24px;">
+                            <span class="rib-lbl">Input</span>
+                            <select id="sel-tablet-mode" class="rib-sel" style="width:160px">
                                 <option value="ink">Standard</option>
                                 <option value="legacy">Smoothed (legacy tablets)</option>
                             </select>
                         </div>
                         <div class="ribbon-group-label">Tablet</div>
+                    </div>
+                </div>
+
+                <!-- ░░░░░░░░░░░░░░░░░ EXPORT ░░░░░░░░░░░░░░░░░ -->
+                <div id="tab-export" class="ribbon-panel">
+
+                    <div class="ribbon-group">
+                        <div class="ribbon-row">
+                            <button class="tb tb-wide rib-full" id="btn-export-png"
+                                data-tip="Export current frame as PNG"><i class="fa-solid fa-image"></i> Frame
+                                (PNG)</button>
+                        </div>
+                        <div class="ribbon-row">
+                            <button class="tb tb-wide rib-full" id="btn-export-seq"
+                                data-tip="Export frame range as numbered PNGs"><i class="fa-solid fa-images"></i>
+                                Sequence</button>
+                        </div>
+                        <div class="ribbon-group-label">Single Frame</div>
+                    </div>
+
+                    <div class="div-v-ribbon"></div>
+
+                    <div class="ribbon-group">
+                        <div class="ribbon-row">
+                            <button class="tb tb-wide rib-full" id="btn-export-mp4"
+                                data-tip="Export animation as MP4 video"><i class="fa-solid fa-film"></i> Video
+                                (MP4)</button>
+                        </div>
+                        <div class="ribbon-row">
+                            <button class="tb tb-wide rib-full" id="btn-export-gif"
+                                data-tip="Export animation as animated GIF"><i class="fa-solid fa-clapperboard"></i>
+                                Animated GIF</button>
+                        </div>
+                        <div class="ribbon-group-label">Animation</div>
+                    </div>
+
+                    <div class="div-v-ribbon"></div>
+
+                    <div class="ribbon-group">
+                        <div class="ribbon-row">
+                            <span class="rib-lbl sm">Cols</span>
+                            <input class="sm-in rib-num" id="export-sheet-cols" type="number" min="1" max="100"
+                                value="8">
+                            <span class="rib-lbl sm">Pad</span>
+                            <input class="sm-in rib-num" id="export-sheet-pad" type="number" min="0" max="32" value="0">
+                        </div>
+                        <div class="ribbon-row">
+                            <button class="tb tb-wide rib-full" id="btn-export-sheet"
+                                data-tip="Export all frames tiled in one PNG"><i class="fa-solid fa-table-cells"></i>
+                                Spritesheet</button>
+                        </div>
+                        <div class="ribbon-group-label">Spritesheet</div>
+                    </div>
+
+                    <div class="div-v-ribbon"></div>
+
+                    <div class="ribbon-group">
+                        <div class="ribbon-row">
+                            <span class="rib-lbl sm">From</span>
+                            <input class="sm-in rib-num" id="export-from" type="number" min="1" value="1">
+                            <span class="rib-lbl xs">To</span>
+                            <input class="sm-in rib-num" id="export-to" type="number" min="1" value="24">
+                        </div>
+                        <div class="ribbon-row">
+                            <span class="rib-lbl sm">Scale</span>
+                            <select id="export-scale" class="rib-sel" style="width:90px">
+                                <option value="0.25">25%</option>
+                                <option value="0.5">50%</option>
+                                <option value="0.75">75%</option>
+                                <option value="1" selected>100%</option>
+                                <option value="1.5">150%</option>
+                                <option value="2">200%</option>
+                            </select>
+                        </div>
+                        <div class="ribbon-group-label">Range &amp; Scale</div>
+                    </div>
+
+                    <div class="div-v-ribbon"></div>
+
+                    <div class="ribbon-group">
+                        <div class="ribbon-row">
+                            <span class="rib-lbl sm">Loop</span>
+                            <div class="tgl on" id="tgl-gif-loop" data-tip="Infinite loop"></div>
+                            <span class="rib-lbl sm">Dither</span>
+                            <div class="tgl" id="tgl-gif-dither" data-tip="Ordered dithering"></div>
+                        </div>
+                        <div class="ribbon-row">
+                            <span class="rib-lbl sm">Colors</span>
+                            <select id="export-gif-colors" class="rib-sel" style="width:70px">
+                                <option value="32">32</option>
+                                <option value="64">64</option>
+                                <option value="128">128</option>
+                                <option value="256" selected>256</option>
+                            </select>
+                        </div>
+                        <div class="ribbon-group-label">GIF Options</div>
                     </div>
                 </div>
 
@@ -1149,9 +1109,10 @@
                     </ul>
                     <p><b>Mouse</b></p>
                     <ul>
-                        <li><kbd>Middle-Click</kbd> drag (or pen side button) — Pan canvas</li>
+                        <li><kbd>Right-Click</kbd> drag (or pen side button) — Pan canvas</li>
                         <li><kbd>Scroll Wheel</kbd> — Zoom canvas</li>
-                        <li><kbd>Ctrl</kbd> + <kbd>Drag</kbd> — Zoom, anchored at the cursor</li>
+                        <li><kbd>Middle-Click</kbd> or <kbd>Ctrl</kbd> + <kbd>Left-Click</kbd> drag — Zoom, anchored at
+                            the cursor</li>
                         <li><b>Double-click</b> a shape — Enter vertex edit mode</li>
                     </ul>
                 </div>
@@ -1225,6 +1186,7 @@
     <script src="js/35-onion-timeline.js"></script>
     <script src="js/36-shortcuts.js"></script>
     <script src="js/37-folders.js"></script>
+    <script src="js/38-ribbon-collapse.js"></script>
 </body>
 </body>
 

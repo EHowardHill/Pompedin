@@ -322,6 +322,9 @@
             $menu.find('[data-act="toggle-loop"], [data-act="toggle-tween"], [data-act="insert-frame"], [data-act="remove-frame"], [data-act="clear-exposure"]').hide();
         } else {
             $menu.find('.ctx-i').show();
+            var layerForCtx = S.layers.find(function (x) { return x.id === l; });
+            var hasKey = layerForCtx && !VF.isFolder(layerForCtx) && layerForCtx.frames[f] !== undefined;
+            if (!hasKey) $menu.find('[data-act="loop-settings"], [data-act="toggle-tween"]').hide();
         }
 
         var mw = $menu.outerWidth();
@@ -484,29 +487,25 @@
                     VF.toast(S.clip ? 'Keyframe copied' : 'Blank frame copied');
                 }
             } else {
-                if (layer.locked && act !== 'copy-frame') {
-                    VF.toast('Layer is locked');
-                    $dotCtx.hide();
-                    return;
-                }
+                if (layer.locked && act !== 'copy-frame') { VF.toast('Layer is locked'); $dotCtx.hide(); return; }
 
-                VF.saveHistory();
-
+                // Loops open a modal and snapshot history on Apply, not here
                 if (act === 'loop-settings') {
                     $dotCtx.hide();
+                    if (layer.frames[ctxF] === undefined) { VF.toast('Loops can only be set on keyframes'); return; }
                     var loopData = layer.loops && layer.loops[ctxF] ? layer.loops[ctxF] : { active: false, mode: 'relative', val: 1 };
                     $('#ls-loop-on').toggleClass('on', loopData.active);
                     $('#ls-loop-mode').val(loopData.mode);
                     $('#ls-loop-val').val(loopData.val);
                     VF._activeLoopCtx = { layer: layer, frame: ctxF };
-
-                    // Enforce rules before showing the modal
                     if (VF.validateLoopInput) VF.validateLoopInput();
-
                     $('#modal-loop-settings').css('display', 'flex');
-                    return; // exit early, no rendering yet
+                    return;
                 }
-                else if (act === 'toggle-tween') {
+
+                VF.saveHistory();
+
+                if (act === 'toggle-tween') {
                     if (layer.frames[ctxF] === undefined) return;
                     if (!layer.tweens) layer.tweens = {};
                     layer.tweens[ctxF] = !layer.tweens[ctxF];
@@ -519,11 +518,14 @@
                             delete layer.transforms[ctxF];
                             VF.render(); VF.uiTimeline();
                         }
-                    } else {
-                        if (layer.frames[ctxF] !== undefined) {
-                            delete layer.frames[ctxF];
-                            delete layer.cache[ctxF];
-                            if (ctxF === S.tl.frame) VF.loadFrame(layer.id, S.tl.frame);
+                        else {
+                            if (layer.frames[ctxF] !== undefined) {
+                                delete layer.frames[ctxF];
+                                delete layer.cache[ctxF];
+                                if (layer.loops) delete layer.loops[ctxF];
+                                if (layer.tweens) delete layer.tweens[ctxF];
+                                if (ctxF === S.tl.frame) VF.loadFrame(layer.id, S.tl.frame);
+                            }
                         }
                     }
                 }
@@ -545,25 +547,23 @@
                 }
                 else if (act === 'insert-frame') {
                     layer.cache = {};
-                    for (var i = S.tl.max - 1; i > ctxF; i--) {
-                        if (layer.frames[i - 1] !== undefined) {
-                            layer.frames[i] = layer.frames[i - 1];
-                        } else {
-                            delete layer.frames[i];
+                    ['frames', 'loops', 'tweens'].forEach(function (m) {
+                        var map = layer[m]; if (!map) return;
+                        for (var i = S.tl.max - 1; i > ctxF; i--) {
+                            if (map[i - 1] !== undefined) map[i] = map[i - 1]; else delete map[i];
                         }
-                    }
-                    delete layer.frames[ctxF];
+                        delete map[ctxF];
+                    });
                 }
                 else if (act === 'remove-frame') {
                     layer.cache = {};
-                    for (var i2 = ctxF; i2 < S.tl.max - 1; i2++) {
-                        if (layer.frames[i2 + 1] !== undefined) {
-                            layer.frames[i2] = layer.frames[i2 + 1];
-                        } else {
-                            delete layer.frames[i2];
+                    ['frames', 'loops', 'tweens'].forEach(function (m) {
+                        var map = layer[m]; if (!map) return;
+                        for (var i2 = ctxF; i2 < S.tl.max - 1; i2++) {
+                            if (map[i2 + 1] !== undefined) map[i2] = map[i2 + 1]; else delete map[i2];
                         }
-                    }
-                    delete layer.frames[S.tl.max - 1];
+                        delete map[S.tl.max - 1];
+                    });
                 }
             }
             VF.render();
@@ -906,7 +906,11 @@
                                 delete lyr.transforms[sel.f];
                             } else {
                                 data = lyr.frames[sel.f];
+                                if (lyr.loops && lyr.loops[sel.f] !== undefined) m_loop = lyr.loops[sel.f];
+                                if (lyr.tweens && lyr.tweens[sel.f] !== undefined) m_tween = lyr.tweens[sel.f];
                                 delete lyr.frames[sel.f];
+                                if (lyr.loops) delete lyr.loops[sel.f];
+                                if (lyr.tweens) delete lyr.tweens[sel.f];
                                 if (lyr.cache) delete lyr.cache[sel.f];
                             }
                         }
@@ -927,6 +931,8 @@
                             } else {
                                 lyr.frames[m.f] = m.data;
                                 if (lyr.cache) delete lyr.cache[m.f];
+                                if (m.loop !== undefined) { if (!lyr.loops) lyr.loops = {}; lyr.loops[m.f] = m.loop; }
+                                if (m.tween !== undefined) { if (!lyr.tweens) lyr.tweens = {}; lyr.tweens[m.f] = m.tween; }
                             }
                         }
                         newSelection.push({ f: m.f, l: m.l, type: m.type });
@@ -1019,14 +1025,15 @@
             var ctx = VF._activeLoopCtx;
             if (!ctx) return;
             var l = ctx.layer;
+            if (l.frames[ctx.frame] === undefined) { $('#modal-loop-settings').hide(); return; } // host gone
+            VF.saveHistory();                                   // snapshot BEFORE mutating
             if (!l.loops) l.loops = {};
             l.loops[ctx.frame] = {
                 active: $('#ls-loop-on').hasClass('on'),
                 mode: $('#ls-loop-mode').val(),
                 val: Math.max(0, parseInt($('#ls-loop-val').val()) || 1)
             };
-            l.cache = {}; // clear cached drawings
-            VF.saveHistory();
+            l.cache = {};
             $('#modal-loop-settings').hide();
             VF.uiTimeline();
             VF.render();

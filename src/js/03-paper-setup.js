@@ -53,7 +53,7 @@
     nCtx.putImageData(nData, 0, 0);
 
     var grainRaster = new P.Raster({ canvas: noiseCvs });
-    grainRaster.blendMode = 'overlay';
+    grainRaster.blendMode = 'multiply';
 
     // NEW: Create a clipping mask strictly bound to the canvas dimensions
     var grainClip = new P.Path.Rectangle({

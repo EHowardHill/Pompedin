@@ -25,9 +25,10 @@
             var loopLen, targetF;
 
             if (L.mode === 'relative') {
-                loopLen = L.val;
+                var startRel = Math.max(0, prev - L.val);
+                loopLen = prev - startRel + 1;            // inclusive span [prev - val, prev]
                 if (loopLen > 0) {
-                    targetF = Math.max(0, prev - loopLen) + ((elapsed - 1) % loopLen);
+                    targetF = startRel + ((elapsed - 1) % loopLen);
                 }
             } else { // absolute
                 loopLen = prev - L.val + 1;

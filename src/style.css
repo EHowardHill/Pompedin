@@ -5,6 +5,8 @@
 /* Default / Forced Light Mode (Windows 7 / Office 2010 Style) */
 :root,
 :root.theme-light {
+    color-scheme: light;
+
     --bg-darkest: #aeb6c3;
     /* Classic Windows grayish-blue workspace backdrop */
     --bg-panel: #e1e6ee;
@@ -34,6 +36,8 @@
 
 /* Forced Dark Mode (Office 2010 "Black" / 2013 "Dark Gray" Style) */
 :root.theme-dark {
+    color-scheme: dark;
+
     --bg-darkest: #202022;
     /* Solid, neutral charcoal workspace */
     --bg-panel: #3e3e42;
@@ -63,6 +67,8 @@
 /* System Dark Mode */
 @media (prefers-color-scheme: dark) {
     :root:not(.theme-light) {
+        color-scheme: dark;
+
         --bg-darkest: #202022;
         --bg-panel: #3e3e42;
         --bg-dark: #2d2d30;
@@ -1840,4 +1846,481 @@ input[type="range"]::-webkit-slider-thumb {
 
 .tl-folder-lbl {
     font-weight: 600;
+}
+
+/* Ensure options always inherit the correct background and text colors */
+select option {
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+}
+
+/* Optional: Specifically target your transparent onion-skin dropdowns */
+.onion-sel option {
+    background-color: var(--bg-panel);
+    color: var(--text-primary);
+}
+
+/* ═══════════════════════════════════════════════════
+   RIBBON REFINEMENT
+   ───────────────────────────────────────────────────
+   A shared sizing system so every control inside the
+   ribbon lines up on one grid: uniform row rhythm,
+   label widths, slider / input widths, dropdown styling,
+   and button heights. Vertically centers each group so
+   1-, 2-, and 3-row groups all read as balanced blocks.
+
+   Append this to the END of style.css (after the
+   existing "RIBBON STYLES" section so it wins the cascade).
+   ═══════════════════════════════════════════════════ */
+
+/* A touch more breathing room for the ribbon body */
+.ribbon-content {
+    height: 116px;
+}
+
+/* Center each group's rows vertically + consistent gap */
+.ribbon-group {
+    justify-content: center;
+    gap: 6px;
+}
+
+/* One consistent row rhythm across the whole ribbon */
+.ribbon-row {
+    min-height: 24px;
+    gap: 6px;
+}
+
+/* All ribbon buttons share a single height */
+.ribbon-content .tb-wide {
+    height: 26px;
+}
+
+/* Keep button glyphs compact + uniform */
+.ribbon-content .tb-wide i {
+    font-size: 10px;
+}
+
+/* ── Leading label before a control (Size, Spacing, Angle …) ── */
+.rib-lbl {
+    font-size: 10px;
+    color: var(--text-dim);
+    width: 50px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.rib-lbl.lg {
+    width: 60px;
+}
+
+/* "End Frame" */
+.rib-lbl.sm {
+    width: 34px;
+}
+
+/* Grid · Safe · Cols · Loop … */
+.rib-lbl.xs {
+    width: 16px;
+}
+
+/* X · Y · Z · R · To */
+
+/* ── Standard slider + its paired number box ── */
+.ribbon-row input[type="range"].rib-slider {
+    width: 64px;
+    flex-shrink: 0;
+}
+
+.sm-in.rib-num {
+    width: 40px;
+    margin-left: 0;
+}
+
+.sm-in.rib-num.lg {
+    width: 48px;
+    /* canvas W/H, camera X · Y · Z · R */
+}
+
+/* ── Standard ribbon dropdown (set width inline per content) ── */
+.rib-sel {
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    font-size: 10px;
+    padding: 0 6px;
+    height: 24px;
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+}
+
+.rib-sel:focus {
+    border-color: var(--accent);
+}
+
+/* ── Trailing unit ( % · ° · px ) ── */
+.rib-unit {
+    font-size: 9px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+}
+
+/* ── Small square icon button beside a control ── */
+.tb.rib-ico {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+/* ── Compact action button for dense rows ── */
+.rib-act {
+    font-size: 10px;
+    padding: 0 9px;
+}
+
+.rib-act.accent {
+    color: var(--accent);
+}
+
+.rib-act.warn {
+    color: var(--warning);
+}
+
+.tb.warn {
+    color: var(--warning);
+}
+
+/* ── Full-width stacked + equal-width paired buttons ── */
+.ribbon-row .tb-wide.rib-full {
+    width: 100%;
+}
+
+.rib-row-2up .tb-wide {
+    flex: 1;
+}
+
+.rib-grow {
+    flex: 1;
+}
+
+/* ── Inline checkbox label ── */
+.rib-check {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: var(--text-dim);
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.rib-check input {
+    margin: 0;
+}
+
+/* ── Symmetry helper hint ── */
+.rib-hint {
+    gap: 4px;
+    font-size: 9px;
+    color: var(--text-dim);
+    opacity: 0.8;
+}
+
+.rib-hint i {
+    font-size: 9px;
+}
+
+/* ── Color swatch fills its box (was an inline padding:0) ── */
+input[type="color"].csw {
+    padding: 0;
+}
+
+/* ── Audio filename label ── */
+.rib-audio-name {
+    font-size: 9px;
+    color: var(--text-dim);
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Onion-skin group internal layout ── */
+.onion-ribbon-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.onion-ribbon-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex-shrink: 0;
+    min-width: 118px;
+}
+
+/* ═══════════════════════════════════════════════════
+   RIBBON REFINEMENT
+   ───────────────────────────────────────────────────
+   A shared sizing system so every control inside the
+   ribbon lines up on one grid: uniform row rhythm,
+   label widths, slider / input widths, dropdown styling,
+   and button heights. Vertically centers each group so
+   1-, 2-, and 3-row groups all read as balanced blocks.
+
+   Append this to the END of style.css (after the
+   existing "RIBBON STYLES" section so it wins the cascade).
+   ═══════════════════════════════════════════════════ */
+
+/* Enough room that a centered 3-row group never clips top/bottom */
+.ribbon-content {
+    height: 124px;
+}
+
+/* Center each group's rows vertically + consistent gap */
+.ribbon-group {
+    justify-content: center;
+    gap: 6px;
+}
+
+/* One consistent row rhythm across the whole ribbon */
+.ribbon-row {
+    min-height: 24px;
+    gap: 6px;
+}
+
+/* All ribbon buttons share a single height */
+.ribbon-content .tb-wide {
+    height: 26px;
+}
+
+/* Keep button glyphs compact + uniform */
+.ribbon-content .tb-wide i {
+    font-size: 10px;
+}
+
+/* ── Leading label before a control (Size, Spacing, Angle …) ── */
+.rib-lbl {
+    font-size: 10px;
+    color: var(--text-dim);
+    width: 50px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.rib-lbl.lg {
+    width: 60px;
+}
+
+/* "End Frame" */
+.rib-lbl.sm {
+    width: 34px;
+}
+
+/* Grid · Safe · Cols · Loop … */
+.rib-lbl.xs {
+    width: 16px;
+}
+
+/* X · Y · Z · R · To */
+
+/* ── Standard slider + its paired number box ── */
+.ribbon-row input[type="range"].rib-slider {
+    width: 64px;
+    flex-shrink: 0;
+}
+
+.sm-in.rib-num {
+    width: 40px;
+    margin-left: 0;
+}
+
+.sm-in.rib-num.lg {
+    width: 48px;
+    /* canvas W/H, camera X · Y · Z · R */
+}
+
+/* ── Standard ribbon dropdown (set width inline per content) ── */
+.rib-sel {
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    font-size: 10px;
+    padding: 0 6px;
+    height: 24px;
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+}
+
+.rib-sel:focus {
+    border-color: var(--accent);
+}
+
+/* ── Trailing unit ( % · ° · px ) ── */
+.rib-unit {
+    font-size: 9px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+}
+
+/* ── Small square icon button beside a control ── */
+.tb.rib-ico {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+/* ── Compact action button for dense rows ── */
+.rib-act {
+    font-size: 10px;
+    padding: 0 9px;
+}
+
+.rib-act.accent {
+    color: var(--accent);
+}
+
+.rib-act.warn {
+    color: var(--warning);
+}
+
+.tb.warn {
+    color: var(--warning);
+}
+
+/* ── Full-width stacked + equal-width paired buttons ── */
+.ribbon-row .tb-wide.rib-full {
+    width: 100%;
+}
+
+.rib-row-2up .tb-wide {
+    flex: 1;
+}
+
+.rib-grow {
+    flex: 1;
+}
+
+/* ── Inline checkbox label ── */
+.rib-check {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: var(--text-dim);
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.rib-check input {
+    margin: 0;
+}
+
+/* ── Symmetry helper hint ── */
+.rib-hint {
+    gap: 4px;
+    font-size: 9px;
+    color: var(--text-dim);
+    opacity: 0.8;
+}
+
+.rib-hint i {
+    font-size: 9px;
+}
+
+/* ── Color swatch fills its box (was an inline padding:0) ── */
+input[type="color"].csw {
+    padding: 0;
+}
+
+/* ── Audio filename label ── */
+.rib-audio-name {
+    font-size: 9px;
+    color: var(--text-dim);
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Onion-skin group internal layout ── */
+.onion-ribbon-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.onion-ribbon-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex-shrink: 0;
+    min-width: 118px;
+}
+
+/* ── Groups whose rows should fill the group width (so a dropdown
+   below W/H, or an audio name, matches the row above it) ── */
+.rib-grp-stretch {
+    align-items: stretch;
+}
+
+.rib-grp-stretch .rib-sel {
+    width: 100%;
+}
+
+/* ── Camera coordinate fields: a fixed 2x2 grid so the label,
+   input and unit columns line up perfectly across both rows ── */
+.cam-grid {
+    display: grid;
+    grid-template-columns: 16px 50px 14px 16px 50px 14px;
+    column-gap: 6px;
+    row-gap: 5px;
+    align-items: center;
+}
+
+.cam-grid .sm-in {
+    width: 100%;
+    margin-left: 0;
+}
+
+.cam-grid .rib-lbl {
+    width: auto;
+}
+
+.cam-grid .rib-unit {
+    width: auto;
+    text-align: left;
+}
+
+/* ── Ribbon collapse / expand toggle (right of the tab bar) ── */
+.tb.ribbon-toggle {
+    margin-left: auto;
+    /* pin to the far right of .ribbon-tabs */
+    width: 28px;
+    height: 22px;
+    font-size: 11px;
+    border-radius: 5px;
+    flex-shrink: 0;
+}
+
+.tb.ribbon-toggle i {
+    transition: transform .18s ease;
+}
+
+/* Collapsed: hide the ribbon body, keep the tab strip visible */
+#top-bar.ribbon-collapsed .ribbon-content {
+    display: none;
+}
+
+#top-bar.ribbon-collapsed .ribbon-toggle i {
+    transform: rotate(180deg);
+    /* chevron points down = click to open */
 }

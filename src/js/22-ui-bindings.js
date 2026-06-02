@@ -327,10 +327,15 @@
                     $('#pref-end, #in-endframe').val(S.tl.max);
                 }
 
-                // Shift the contiguous block to the right
-                for (var i = emptyF; i > targetF; i--) {
-                    l.frames[i] = l.frames[i - 1];
-                }
+                // Shift the contiguous block to the right.
+                // Loops and tweens are node-bound, so they ride along with their host frame.
+                ['frames', 'loops', 'tweens'].forEach(function (m) {
+                    var map = l[m]; if (!map) return;
+                    for (var i = emptyF; i > targetF; i--) {
+                        if (map[i - 1] !== undefined) map[i] = map[i - 1];
+                        else delete map[i];
+                    }
+                });
 
                 l.cache = {}; // Clear cache since frames were shifted
             } else if (targetF >= S.tl.max) {
@@ -343,6 +348,11 @@
             S.tl.frame = targetF;
             l.frames[S.tl.frame] = dataToCopy;
             if (l.cache) delete l.cache[S.tl.frame];
+
+            // A freshly duplicated node starts clean — don't inherit a loop/tween
+            // that the ripple may have shifted into this slot.
+            if (l.loops) delete l.loops[S.tl.frame];
+            if (l.tweens) delete l.tweens[S.tl.frame];
         }
 
         VF.render();
@@ -387,10 +397,15 @@
                     $('#pref-end, #in-endframe').val(S.tl.max);
                 }
 
-                // Shift the contiguous block to the right
-                for (var i = emptyF; i > targetF; i--) {
-                    l.frames[i] = l.frames[i - 1];
-                }
+                // Shift the contiguous block to the right.
+                // Loops and tweens are node-bound, so they ride along with their host frame.
+                ['frames', 'loops', 'tweens'].forEach(function (m) {
+                    var map = l[m]; if (!map) return;
+                    for (var i = emptyF; i > targetF; i--) {
+                        if (map[i - 1] !== undefined) map[i] = map[i - 1];
+                        else delete map[i];
+                    }
+                });
 
                 l.cache = {}; // Clear cache since frames were shifted
             } else if (targetF >= S.tl.max) {
@@ -404,6 +419,11 @@
             l.frames[S.tl.frame] = [];
             if (l.cache) delete l.cache[S.tl.frame];
             if (VF.pLayers[l.id]) VF.pLayers[l.id].removeChildren();
+
+            // A blank node is brand new — strip any loop/tween the ripple
+            // may have shifted into this slot.
+            if (l.loops) delete l.loops[S.tl.frame];
+            if (l.tweens) delete l.tweens[S.tl.frame];
         }
 
         VF.render();
@@ -423,6 +443,12 @@
         if (l.frames[S.tl.frame] !== undefined) {
             delete l.frames[S.tl.frame];
             if (l.cache) delete l.cache[S.tl.frame];
+
+            // The loop and tween belong to this node — removing the node
+            // removes them, so they can't reactivate if a frame later
+            // reoccupies this slot.
+            if (l.loops) delete l.loops[S.tl.frame];
+            if (l.tweens) delete l.tweens[S.tl.frame];
 
             // Reload resolved exposure to prevent saving a new blank frame
             VF.loadFrame(l.id, S.tl.frame);

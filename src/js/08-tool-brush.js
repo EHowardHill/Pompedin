@@ -142,6 +142,8 @@
        MOUSE DOWN
        ═══════════════════════════════════════════════════ */
     tBrush.onMouseDown = function (e) {
+        console.log('brush down', S.tool, 'drawing=', drawing, e.event.button);
+
         var P = getP();
         if (VF.isPanInput(e.event)) return;
         if (VF.isLocked && VF.isLocked()) { VF.toast('Layer is locked'); return; }

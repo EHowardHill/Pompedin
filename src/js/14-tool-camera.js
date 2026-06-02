@@ -80,7 +80,7 @@
     $(cvs).on('pointerdown', function (e) {
         var P = getP();
         var ev = e.originalEvent;
-        if (ev.button === 1 || (ev.pointerType === 'pen' && (ev.button === 2 || ev.button === 5))) {
+        if (ev.button === 2 || (ev.pointerType === 'pen' && ev.button === 5)) {
             e.preventDefault();
             isMiddlePanning = true;
             middlePanStart = new P.Point(ev.clientX, ev.clientY);
@@ -106,7 +106,7 @@
 
     $(window).on('pointerup', function (e) {
         var ev = e.originalEvent;
-        if (isMiddlePanning && (ev.button === 1 || ev.button === 2 || ev.pointerType === 'pen')) {
+        if (isMiddlePanning && (ev.button === 2 || ev.pointerType === 'pen')) {
             isMiddlePanning = false;
             VF.setTool(S.tool);
         }
@@ -117,10 +117,10 @@
     });
 
     // ═══════════════════════════════════════════════════
-    //  Ctrl + Drag to Zoom (Mouse & Pen)
+    //  Global Drag to Zoom (Ctrl+Left OR Middle-Click)
     //  Works globally regardless of the active tool.
-    //  Horizontal drag = zoom in/out, anchored at the
-    //  pointer's initial project-space position.
+    //  Drag up/right = zoom in, down/left = zoom out, 
+    //  anchored at the pointer's initial position.
     // ═══════════════════════════════════════════════════
     var isCtrlZooming = false;
     var ctrlZoomStart = null;
@@ -129,11 +129,14 @@
 
     $(cvs).on('pointerdown', function (e) {
         var ev = e.originalEvent;
-        // Only trigger on primary button (left-click or pen contact) while Ctrl is held
-        if (ev.button !== 0) return;
-        if (!ev.ctrlKey && !ev.metaKey) return;
 
-        // Don't interfere if middle-pan is already active
+        // Trigger on Ctrl+LeftClick OR Middle-Click (button 1)
+        var isCtrlLeft = ev.button === 0 && (ev.ctrlKey || ev.metaKey);
+        var isMiddle = ev.button === 1;
+
+        if (!isCtrlLeft && !isMiddle) return;
+
+        // Don't interfere if pan is already active
         if (isMiddlePanning) return;
 
         var P = getP();
@@ -160,11 +163,14 @@
         var P = getP();
         var ev = e.originalEvent;
         var currentPt = new P.Point(ev.clientX, ev.clientY);
+
         var dx = currentPt.x - ctrlZoomStart.x;
+        var dy = currentPt.y - ctrlZoomStart.y;
         ctrlZoomStart = currentPt;
 
-        // Positive dx (drag right) = zoom in, negative = zoom out
-        var f = 1 + dx * 0.006;
+        // Drag Right or Up = Zoom In. Drag Left or Down = Zoom Out.
+        var delta = dx - dy;
+        var f = 1 + delta * 0.006;
         var newZoom = Math.max(0.05, Math.min(16, VF.view.zoom * f));
         VF.view.zoom = newZoom;
 
@@ -174,7 +180,7 @@
             VF.view.center = VF.view.center.add(ctrlZoomAnchor.subtract(currentProjectPt));
         }
 
-        cvs.style.cursor = dx >= 0 ? 'zoom-in' : 'zoom-out';
+        cvs.style.cursor = delta >= 0 ? 'zoom-in' : 'zoom-out';
         VF.updateInfo();
         VF.drawBorder();
     });
@@ -182,6 +188,9 @@
     $(window).on('pointerup', function (e) {
         if (!isCtrlZooming) return;
         var ev = e.originalEvent;
+
+        // Only release if the button lifted is Left (0) or Middle (1)
+        if (ev.button !== 0 && ev.button !== 1) return;
 
         isCtrlZooming = false;
         ctrlZoomStart = null;

@@ -151,6 +151,7 @@
         // Window Close Interception
         if (window.__TAURI__ && window.__TAURI__.window) {
             var appWindow = window.__TAURI__.window.getCurrentWindow();
+            appWindow.center();
 
             appWindow.onCloseRequested(async function (event) {
                 // ALWAYS prevent the default OS close so we control it deterministically

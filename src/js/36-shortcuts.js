@@ -3,23 +3,6 @@
 
     var S = VF.S;
 
-    /* ═══════════════════════════════════════════════════
-       CUSTOMIZABLE KEYBOARD SHORTCUTS  —  Moho Pro 13.5 layout
-       ───────────────────────────────────────────────────
-       Defaults mirror Moho Pro 13.5. Moho publishes its
-       shortcuts for macOS (⌘ / ⌥); these are translated to
-       Windows (Ctrl / Alt) for the Tauri build.
-
-       Where Moho and Pompedin tools differ, the closest
-       Moho key is used. Tools with no Moho equivalent
-       (layer Rotate/Scale, workspace Zoom, Symmetry, global
-       layer-nav) keep sensible non-conflicting keys.
-
-       Editing combos (Ctrl+Z/C/V/X/A/S) are hardcoded in
-       23-keyboard.js and already match Moho. The bracket
-       keys [ ] (line width) also already match Moho.
-       ═══════════════════════════════════════════════════ */
-
     var STORAGE_KEY = 'pompedin_keymap';
 
     /* ── Shared helpers ── */
@@ -61,10 +44,10 @@
         'tool-fill': { label: 'Fill (Paint Bucket)', group: 'Tools', run: function () { VF.setTool('fill'); } },
         'tool-hide-edge': { label: 'Hide Edge', group: 'Tools', run: function () { VF.setTool('hide-edge'); } },
         'tool-translate': { label: 'Translate Layer (Transform Layer)', group: 'Tools', run: function () { VF.setTool('translate'); } },
-        'tool-rotate': { label: 'Rotate Layer  (no Moho equiv.)', group: 'Tools', run: function () { VF.setTool('rotate'); } },
-        'tool-scale': { label: 'Scale Layer  (no Moho equiv.)', group: 'Tools', run: function () { VF.setTool('scale'); } },
+        'tool-rotate': { label: 'Rotate Layer', group: 'Tools', run: function () { VF.setTool('rotate'); } },
+        'tool-scale': { label: 'Scale Layer', group: 'Tools', run: function () { VF.setTool('scale'); } },
         'tool-camera': { label: 'Camera (Track Camera)', group: 'Tools', run: function () { VF.setTool('camera'); } },
-        'tool-zoom': { label: 'Zoom Workspace  (no Moho equiv.)', group: 'Tools', run: function () { VF.setTool('zoom'); } },
+        'tool-zoom': { label: 'Zoom Workspace', group: 'Tools', run: function () { VF.setTool('zoom'); } },
         'tool-rotate-view': { label: 'Rotate Workspace', group: 'Tools', run: function () { VF.setTool('rotate-view'); } },
         'eyedropper': { label: 'Eyedropper (Stroke)', group: 'Tools', run: function () { VF.pickScreenColor('#clr-stroke'); } },
 
@@ -247,7 +230,7 @@
         var order = ['Tools', 'Playback', 'Layers', 'View', 'Canvas'];
 
         var html = '<div class="mo-box" style="min-width:460px;max-width:540px;max-height:82vh;display:flex;flex-direction:column">';
-        html += '<div class="mo-title">Keyboard Shortcuts <span style="font-size:10px;font-weight:400;color:var(--text-dim)">— Moho Pro 13.5 layout</span></div>';
+        html += '<div class="mo-title">Keyboard Shortcuts <span style="font-size:10px;font-weight:400;color:var(--text-dim)">— Default layout</span></div>';
         html += '<div style="font-size:11px;color:var(--text-secondary);margin-bottom:12px;line-height:1.5">' +
             'Click a shortcut, then press the key or combination you want. ' +
             'Press <kbd>Esc</kbd> to cancel. Conflicting bindings are cleared automatically.</div>';
@@ -264,7 +247,7 @@
         });
         html += '</div>';
         html += '<div style="display:flex;justify-content:space-between;gap:8px;margin-top:16px">' +
-            '<button class="btn" id="sc-reset">Reset to Moho Defaults</button>' +
+            '<button class="btn" id="sc-reset">Reset to Defaults</button>' +
             '<button class="btn btn-p" id="sc-close">Done</button>' +
             '</div>';
         html += '</div>';
@@ -277,7 +260,7 @@
         $modal.on('click', '#sc-reset', function () {
             keymap = $.extend({}, DEFAULT_KEYMAP);
             rebuildReverse(); saveKeymap(); refresh();
-            VF.toast('Shortcuts reset to Moho defaults');
+            VF.toast('Shortcuts reset to defaults');
         });
         $modal.on('click', '.sc-key', function () {
             stopListening();

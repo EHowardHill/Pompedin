@@ -116,4 +116,4 @@ function loadCore() {
     return global.VF;
 }
 
-module.exports = { loadCore };
+module.exports = { loadCore, installStubs, loadScript };

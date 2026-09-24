@@ -449,6 +449,18 @@
                 // PERFORMANCE: already showing exactly this data? Skip
                 // the full deserialize-rebuild.
                 if (VF._plSynced(id, data)) return;
+
+                // The rebuild replaces every item on the active layer. Any
+                // live selection (and its on-canvas gizmo) belongs to items
+                // that are about to be destroyed — drop it, or a stale
+                // "select rectangle" survives over content that changed
+                // underneath it (timeline keyframe deletes, project loads…).
+                if (id === S.activeId && !VF._exporting && VF.selSegments.length > 0) {
+                    VF.selSegments = [];
+                    if (VF.clearHandles) VF.clearHandles();
+                    if (VF.clearSelStyle) VF.clearSelStyle();
+                }
+
                 pl.removeChildren();
                 VF.desPL(pl, data);
                 VF._plMarkSync(id, data);

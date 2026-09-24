@@ -4,9 +4,6 @@
     var S = VF.S, P;
     function getP() { if (!P) P = VF.P; return P; }
 
-    var spaceHeld = false;
-    var preSpaceTool = null;
-
     /* ── Item clipboard (separate from frame clipboard S.clip) ── */
     VF.itemClip = null;
 
@@ -524,17 +521,19 @@
             return;
         }
 
-        /* ── Space pan-hold stays hardcoded (needs keyup tracking) ── */
-        if (e.key === ' ') {
-            spaceHeld = false;
-            VF.setTool(preSpaceTool || 'brush');
-            preSpaceTool = null;
-        }
+        /* Space is Play/Stop (remappable via the shortcuts map). The old
+           "hold space to pan" code that used to live here silently forced
+           the active tool back to 'brush' on every Space press, derailing
+           tool navigation mid-work. */
 
         /* ── Remappable actions: tools, playback, frame/layer nav, symmetry ── */
         if (VF.shortcuts && VF.shortcuts.handle(e)) return;
 
-        if (k === 'escape') {
+        /* Escape deselects / exits vertex mode; Enter deselects. */
+        if (k === 'escape' || k === 'enter') {
+            // Enter on a focused control activates it (native button
+            // behavior) — only bare Enter deselects.
+            if (k === 'enter' && e.target.closest && e.target.closest('button, .tgl, [role="button"]')) return;
             e.preventDefault();
             if (VF.selectMode === 'vertex') {
                 VF.exitVertexMode();
@@ -552,6 +551,45 @@
                     return;
                 }
                 VF.saveHistory();
+
+                /* Vertex mode: delete the selected POINTS, not the whole
+                   items. Only object mode removes entire strokes. */
+                if (VF.selectMode === 'vertex') {
+                    var touchedPaths = new Set();
+                    var texGroups = new Set();
+
+                    VF.selSegments.forEach(function (seg) {
+                        if (!seg || !seg.path) return;
+                        touchedPaths.add(seg.path);
+                        if (seg.remove) seg.remove();
+                    });
+
+                    touchedPaths.forEach(function (p) {
+                        var grp = p.parent;
+                        var isTex = grp && grp.data && grp.data.isTextureStroke;
+                        if (!p.segments || p.segments.length === 0) {
+                            // Path emptied out — drop it (and its texture
+                            // group, which is nothing without a guide).
+                            if (isTex) grp.remove(); else p.remove();
+                        } else if (isTex) {
+                            texGroups.add(grp);
+                        }
+                    });
+
+                    texGroups.forEach(function (g) {
+                        if (VF.rebuildTextureRaster) VF.rebuildTextureRaster(g);
+                    });
+
+                    VF.selSegments = [];
+                    VF.clearHandles();
+                    if (VF.syncUIFromSelection) VF.syncUIFromSelection();
+                    VF.saveFrame();
+                    VF.uiTimeline();
+                    VF.render();
+                    VF.toast('Points deleted');
+                    return;
+                }
+
                 var items = VF.getSelectedItems();
                 items.forEach(function (item) { item.remove(); });
                 VF.selSegments = [];
@@ -608,11 +646,6 @@
     });
 
     $(document).on('keyup', function (e) {
-        if (e.key === ' ') {
-            spaceHeld = false;
-            VF.setTool(preSpaceTool || 'brush');
-            preSpaceTool = null;
-        }
         if (e.key === 'Alt') {
             // Only open the eyedropper for a clean Alt tap (no combo like Alt+Tab)
             if (!VF._altDirty) {

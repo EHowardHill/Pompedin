@@ -23,6 +23,11 @@ sheet).
 
 - **Draw**: Brush (F) freehand; Fill (P) fills closed shapes; Eraser (E)
   removes; Hide Edge (H) masks individual curve segments.
+- **Select / Edit (T)**: click strokes to select them, drag to move.
+  Double-click a selected stroke to edit its points. **Delete** follows the
+  mode — whole strokes in object mode, just the selected points in point
+  mode. The stroke you just drew stays selected, so **Ctrl+Z** (or Delete)
+  removes it without switching tools.
 - **New blank frame**: F5. **Duplicate the current frame**: F6 — the
   standard way to animate: draw, duplicate, adjust.
 - **Navigate**: ← / → between frames, ↑ / ↓ between layers.
@@ -119,7 +124,7 @@ report yourself.
 ## 10. Shortcuts
 
 Open the **Keys** panel (ribbon → Keys) to view and remap every binding.
-Defaults follow a Moho-like layout:
+The same table is shown in the app's Help dialog:
 
 | Action | Key | Action | Key |
 |---|---|---|---|
@@ -136,7 +141,28 @@ Defaults follow a Moho-like layout:
 | Fit to screen | Shift+Home | Grid | Ctrl+G |
 | Onion skins | Ctrl+L | Symmetry H/V | Shift+H / Shift+V |
 
-Reserved (not remappable): Ctrl+Z/Y/S/Shift+S/C/V/X/A, Esc, Delete.
+Reserved (not remappable): Ctrl+Z/Y/S/Shift+S/C/V/X/A, Esc, Enter,
+Delete/Backspace.
+
+### Mouse & pen
+
+The modifier is re-read on every move, so you can switch between pan,
+zoom and rotate mid-drag:
+
+| Input | Action |
+|---|---|
+| Right-drag (or pen side button) | Pan canvas |
+| Shift + right-drag | Zoom canvas (drag up = in) |
+| Ctrl + right-drag | Rotate canvas |
+| Scroll wheel over canvas | Zoom canvas |
+| Scroll wheel over the timeline | Scrub frames (Shift = scroll layer rows) |
+| Scroll wheel over a number field | Adjust value (Ctrl = ½ step, Shift = ×2) |
+| Right-drag in a number field | Adjust value sideways — tablet/pen friendly |
+| Middle-drag or Ctrl+left-drag | Anchored zoom (Pompedin extra) |
+| Pen pressure | Varies stroke width (Brush settings → Pressure) |
+
+A plain right-**click** (no movement) still opens the normal context
+menu everywhere — only right-**drags** navigate or adjust.
 
 ## 11. Preferences & localization
 

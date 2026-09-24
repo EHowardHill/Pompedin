@@ -121,6 +121,55 @@
 
     VF.smoothTol = function () { return [0, 0.5, 2, 5, 10, 22][VF.S.cfg.smooth] || 5; };
 
+    /* ── Wheel helpers (unit-tested in tests/mouse-gestures.test.js) ──
+    
+       Mouse wheels send one big delta per notch (~120px on Windows,
+       deltaMode=lines on Firefox); trackpads send many small deltas.
+       _wheelNotches normalizes both into whole "notches" so one notch
+       equals one action (one frame scrub, one field step), without
+       trackpad spam or lost remainders. */
+    VF._wheelNotches = function (acc, deltaY, deltaMode) {
+        // Normalize line/page modes to pixel scale
+        var dy = deltaY;
+        if (deltaMode === 1) dy = deltaY * 40;      // DOM_DELTA_LINE
+        else if (deltaMode === 2) dy = deltaY * 800; // DOM_DELTA_PAGE
+
+        var THRESH = 100;   // pixels of travel per notch
+        var acc2 = acc + dy;
+
+        // A discrete mouse notch arrives as one large delta — snap it to
+        // exactly one notch so remainders never build up into jumps.
+        // (Symmetric rounding: a backwards flick must scrub as many
+        // frames as a forwards one.)
+        if (Math.abs(dy) >= THRESH) {
+            var n = Math.round(Math.abs(dy) / THRESH);
+            return { acc: 0, notches: dy > 0 ? n : -n };
+        }
+
+        // Trackpad: accumulate until a full notch has been travelled
+        var notches = 0;
+        while (acc2 >= THRESH) { acc2 -= THRESH; notches++; }
+        while (acc2 <= -THRESH) { acc2 += THRESH; notches--; }
+        return { acc: acc2, notches: notches };
+    };
+
+    /* Nudge a numeric field value by `steps` × step, clamped to min/max,
+       rounded to the step's decimal precision. min/max of NaN mean
+       "unbounded" (missing attributes). */
+    VF._nudgeValue = function (cur, steps, step, min, max) {
+        var v = cur + steps * step;
+        if (isFinite(min)) v = Math.max(min, v);
+        if (isFinite(max)) v = Math.min(max, v);
+        return v;
+    };
+
+    /* Decimal places implied by a step value ("0.5" → 1, "1" → 0). */
+    VF._stepDecimals = function (step) {
+        var s = String(step);
+        var dot = s.indexOf('.');
+        return dot === -1 ? 0 : s.length - dot - 1;
+    };
+
     VF.isPanInput = function (ev) {
         return ev.button === 2 || (ev.pointerType === 'pen' && ev.button === 5);
     };

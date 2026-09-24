@@ -34,6 +34,18 @@
             'tip.tool.camera': 'Camera Tool (4)',
             'tip.tool.zoom': 'Zoom (Z / Scroll)',
             'tip.tool.rotate-view': 'Rotate Workspace (8)',
+            'tip.tool.resetview': 'Reset View (Home)',
+            'tip.tool.fitscreen': 'Fit to Screen (Shift+Home / Ctrl+0)',
+
+            /* ── Timeline transport buttons (keep in sync with
+                  DEFAULT_KEYMAP in 36-shortcuts.js: F5 New Frame,
+                  F6 Duplicate, Shift+F5 Delete, Space Play) ── */
+            'tip.btn.prev': 'Previous Frame (←)',
+            'tip.btn.play': 'Play / Pause (Space)',
+            'tip.btn.next': 'Next Frame (→)',
+            'tip.btn.newframe': 'New Frame (F5)',
+            'tip.btn.dupframe': 'Duplicate Frame (F6)',
+            'tip.btn.delframe': 'Delete Frame (Shift+F5)',
 
             /* ── Ribbon: Info group ── */
             'ribbon.shortcuts': 'Keyboard Shortcuts',

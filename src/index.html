@@ -636,10 +636,10 @@
             <button class="tb tb-sidebar" data-tool="rotate-view" data-i18n-tip="tip.tool.rotate-view" data-tip="Rotate Workspace (8)">
                 <i class="fa-solid fa-rotate"></i><span>Rotate View</span>
             </button>
-            <button class="tb tb-sidebar" id="btn-resetview" data-tip="Reset View (Home)">
+            <button class="tb tb-sidebar" id="btn-resetview" data-i18n-tip="tip.tool.resetview" data-tip="Reset View (Home)">
                 <i class="fa-solid fa-compress"></i><span>Reset View</span>
             </button>
-            <button class="tb tb-sidebar" id="btn-fitscreen" data-tip="Fit to Screen (Ctrl+0)">
+            <button class="tb tb-sidebar" id="btn-fitscreen" data-i18n-tip="tip.tool.fitscreen" data-tip="Fit to Screen (Shift+Home / Ctrl+0)">
                 <i class="fa-solid fa-up-right-and-down-left-from-center"></i><span>Fit Screen</span>
             </button>
         </div>
@@ -691,25 +691,28 @@
         <div id="timeline-bar">
             <div id="tl-head">
                 <button class="tb" id="btn-prev" style="width:22px;height:22px;font-size:11px"
-                    data-tip="Previous Frame (←)">◂</button>
+                    data-i18n-tip="tip.btn.prev" data-tip="Previous Frame (←)">◂</button>
                 <button class="tb" id="btn-play" style="width:22px;height:22px;font-size:12px"
-                    data-tip="Play / Pause (Enter)">▶</button>
+                    data-i18n-tip="tip.btn.play" data-tip="Play / Pause (Space)">▶</button>
                 <button class="tb" id="btn-next" style="width:22px;height:22px;font-size:11px"
-                    data-tip="Next Frame (→)">▸</button>
+                    data-i18n-tip="tip.btn.next" data-tip="Next Frame (→)">▸</button>
                 <span id="frame-disp"
                     style="font-size:10px;font-weight:600;color:var(--text-primary);min-width:44px;text-align:center;margin-left:4px">1
                     / 24</span>
 
                 <div class="div-h" style="margin:0 6px"></div>
 
-                <button class="tb tb-wide" id="btn-add-blank" data-tip="Blank Key (F6)"
-                    style="margin-left:4px;font-size:10px;color:var(--accent)">◇ Blank Key</button>
+                <!-- F5 = New Frame, F6 = Duplicate Frame, Shift+F5 =
+                     Delete Frame. Keep the tooltips in sync with
+                     DEFAULT_KEYMAP (36-shortcuts.js). -->
+                <button class="tb tb-wide" id="btn-add-blank" data-i18n-tip="tip.btn.newframe" data-tip="New Frame (F5)"
+                    style="margin-left:4px;font-size:10px;color:var(--accent)">◇ New Frame</button>
 
-                <button class="tb tb-wide" id="btn-add-dup" data-tip="Duplicate Key (F7)"
-                    style="font-size:10px;color:var(--accent)">◆ Dup Key</button>
+                <button class="tb tb-wide" id="btn-add-dup" data-i18n-tip="tip.btn.dupframe" data-tip="Duplicate Frame (F6)"
+                    style="font-size:10px;color:var(--accent)">◆ Duplicate</button>
 
-                <button class="tb tb-wide" id="btn-del-node" data-tip="Delete Keyframe"
-                    style="margin-left:4px;font-size:10px;color:var(--warning)">× Del Key</button>
+                <button class="tb tb-wide" id="btn-del-node" data-i18n-tip="tip.btn.delframe" data-tip="Delete Frame (Shift+F5)"
+                    style="margin-left:4px;font-size:10px;color:var(--warning)">× Delete</button>
 
                 <div style="flex:1"></div>
             </div>
@@ -1133,13 +1136,21 @@
                         <li><kbd>Ctrl</kbd> + <kbd>A</kbd> — Select All</li>
                         <li><kbd>[</kbd> / <kbd>]</kbd> — Decrease / Increase stroke width (hold <kbd>Shift</kbd> for
                             ×5)</li>
-                        <li><kbd>Esc</kbd> — Deselect / Exit vertex mode</li>
+                        <li><kbd>Esc</kbd> / <kbd>Enter</kbd> — Deselect · Esc also exits vertex mode</li>
                         <li><kbd>Delete</kbd> / <kbd>Backspace</kbd> — Delete selected items or keyframes</li>
                     </ul>
-                    <p><b>Mouse</b></p>
+                    <p><b>Mouse &amp; Pen</b></p>
                     <ul>
                         <li><kbd>Right-Click</kbd> drag (or pen side button) — Pan canvas</li>
+                        <li><kbd>Shift</kbd> + <kbd>Right-Click</kbd> drag — Zoom canvas</li>
+                        <li><kbd>Ctrl</kbd> + <kbd>Right-Click</kbd> drag — Rotate canvas</li>
                         <li><kbd>Scroll Wheel</kbd> — Zoom canvas</li>
+                        <li><kbd>Scroll Wheel</kbd> over the timeline — Scrub frames (<kbd>Shift</kbd> = scroll
+                            layer rows)</li>
+                        <li><kbd>Scroll Wheel</kbd> over a number field — Adjust value (<kbd>Ctrl</kbd> = half
+                            step, <kbd>Shift</kbd> = double)</li>
+                        <li><kbd>Right-Click</kbd> drag in a number field — Adjust value sideways (tablet/pen
+                            friendly)</li>
                         <li><kbd>Middle-Click</kbd> or <kbd>Ctrl</kbd> + <kbd>Left-Click</kbd> drag — Zoom, anchored at
                             the cursor</li>
                         <li><b>Double-click</b> a shape — Enter vertex edit mode</li>

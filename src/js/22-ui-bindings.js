@@ -484,6 +484,86 @@
     });
 
     /* ═══════════════════════════════════════════════════
+       Mouse/pen adjustments for numeric fields:
+         · wheel over a field nudges its value
+           (Ctrl = half step, Shift = double step)
+         · right-drag inside a field nudges it sideways — for
+           tablets/pens, which have no mouse wheel. A right
+           CLICK (no movement) still opens the normal menu.
+       ═══════════════════════════════════════════════════ */
+    function fieldStep(input, ev) {
+        var step = parseFloat($(input).attr('step'));
+        if (!isFinite(step) || step <= 0) step = 1;
+        if (ev && ev.ctrlKey) step /= 2;    // Ctrl halves the increment
+        if (ev && ev.shiftKey) step *= 2;   // Shift doubles the increment
+        return step;
+    }
+
+    function setFieldValue(input, val) {
+        var step = parseFloat($(input).attr('step'));
+        var dec = (isFinite(step) && step > 0) ? VF._stepDecimals(step) : 0;
+        input.value = val.toFixed(dec);
+        $(input).trigger('input').trigger('change');
+    }
+
+    /* ── Wheel over a numeric field = nudge by one step ── */
+    $(document).on('wheel', 'input[type="number"]', function (e) {
+        if (this.disabled) return;
+        var oe = e.originalEvent;
+
+        var acc = $(this).data('wheelAcc') || 0;
+        var r = VF._wheelNotches(acc, oe.deltaY, oe.deltaMode);
+        $(this).data('wheelAcc', r.acc);
+
+        if (r.notches !== 0) {
+            var cur = parseFloat(this.value);
+            if (!isFinite(cur)) cur = 0;
+            var step = fieldStep(this, oe);
+            setFieldValue(this, VF._nudgeValue(cur, r.notches, step,
+                parseFloat(this.min), parseFloat(this.max)));
+        }
+        e.preventDefault();
+    });
+
+    /* ── Right-drag inside a numeric field = adjust (tablet-friendly) ── */
+    var numDrag = null;
+
+    $(document).on('pointerdown', 'input[type="number"]', function (e) {
+        if (e.button !== 2 || this.disabled) return;
+        var cur = parseFloat(this.value);
+        numDrag = { input: this, startX: e.clientX, startVal: isFinite(cur) ? cur : 0, moved: false };
+    });
+
+    $(window).on('pointermove', function (e) {
+        if (!numDrag) return;
+        var dx = e.clientX - numDrag.startX;
+        if (!numDrag.moved && Math.abs(dx) < 3) return;   // still a click, not a drag
+        numDrag.moved = true;
+
+        var step = fieldStep(numDrag.input, e);
+        var steps = Math.round(dx / 5);   // ~5 px of travel per step
+        setFieldValue(numDrag.input, VF._nudgeValue(numDrag.startVal, steps, step,
+            parseFloat(numDrag.input.min), parseFloat(numDrag.input.max)));
+    });
+
+    $(window).on('pointerup', function (e) {
+        if (!numDrag) return;
+        if (numDrag.moved) {
+            // It was an adjust-drag, not a click — swallow the context
+            // menu that the browser fires right after the pointer lifts.
+            numDrag.input._noContextMenu = Date.now();
+        }
+        numDrag = null;
+    });
+
+    $(document).on('contextmenu', 'input[type="number"]', function (e) {
+        if (this._noContextMenu && Date.now() - this._noContextMenu < 600) {
+            e.preventDefault();
+            this._noContextMenu = 0;
+        }
+    });
+
+    /* ═══════════════════════════════════════════════════
        INLINE ONION SKIN CONTROLS  (ribbon-based)
        ═══════════════════════════════════════════════════ */
 

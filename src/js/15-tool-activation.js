@@ -7,19 +7,20 @@
     var cvs = VF.cvs;
 
     VF.setTool = function (t) {
-        var prevTool = S.tool;
         S.tool = t;
 
-        /* Reset to object mode when leaving select-family tools */
+        /* The selection gizmo is only interactive in select-family tools.
+           Entering any other tool drops it — no matter what the previous
+           tool was. (Previously the selection only cleared when coming
+           FROM a select tool, so the brush's auto-selected stroke kept a
+           dangling gizmo on screen over the eraser/fill/camera.) */
         var isSelectFamily = ['select', 'lasso', 'translate', 'rotate', 'scale'];
         if (isSelectFamily.indexOf(t) === -1) {
             VF.selectMode = 'object';
 
-            if (isSelectFamily.indexOf(prevTool) !== -1) {
-                VF.clearHandles();
-                VF.selSegments = [];
-                if (VF.clearSelStyle) VF.clearSelStyle();   // ribbon back to brush defaults
-            }
+            VF.clearHandles();
+            VF.selSegments = [];
+            if (VF.clearSelStyle) VF.clearSelStyle();   // ribbon back to brush defaults
         }
 
         $('#left-tools .tb').removeClass('active');

@@ -36,17 +36,17 @@
 
     /* ── Action registry: id → { label, group, run } ── */
     var ACTIONS = {
-        /* Tools — mapped to the nearest Moho tool */
-        'tool-select': { label: 'Select / Edit (Transform Points)', group: 'Tools', run: function () { VF.setTool('select'); } },
-        'tool-brush': { label: 'Brush (Freehand)', group: 'Tools', run: function () { VF.setTool('brush'); } },
-        'tool-lasso': { label: 'Lasso (Select Points)', group: 'Tools', run: function () { VF.setTool('lasso'); } },
+        /* Tools */
+        'tool-select': { label: 'Select / Edit', group: 'Tools', run: function () { VF.setTool('select'); } },
+        'tool-brush': { label: 'Brush', group: 'Tools', run: function () { VF.setTool('brush'); } },
+        'tool-lasso': { label: 'Lasso', group: 'Tools', run: function () { VF.setTool('lasso'); } },
         'tool-eraser': { label: 'Eraser', group: 'Tools', run: function () { VF.setTool('eraser'); } },
-        'tool-fill': { label: 'Fill (Paint Bucket)', group: 'Tools', run: function () { VF.setTool('fill'); } },
+        'tool-fill': { label: 'Fill', group: 'Tools', run: function () { VF.setTool('fill'); } },
         'tool-hide-edge': { label: 'Hide Edge', group: 'Tools', run: function () { VF.setTool('hide-edge'); } },
-        'tool-translate': { label: 'Translate Layer (Transform Layer)', group: 'Tools', run: function () { VF.setTool('translate'); } },
+        'tool-translate': { label: 'Translate Layer', group: 'Tools', run: function () { VF.setTool('translate'); } },
         'tool-rotate': { label: 'Rotate Layer', group: 'Tools', run: function () { VF.setTool('rotate'); } },
         'tool-scale': { label: 'Scale Layer', group: 'Tools', run: function () { VF.setTool('scale'); } },
-        'tool-camera': { label: 'Camera (Track Camera)', group: 'Tools', run: function () { VF.setTool('camera'); } },
+        'tool-camera': { label: 'Camera', group: 'Tools', run: function () { VF.setTool('camera'); } },
         'tool-zoom': { label: 'Zoom Workspace', group: 'Tools', run: function () { VF.setTool('zoom'); } },
         'tool-rotate-view': { label: 'Rotate Workspace', group: 'Tools', run: function () { VF.setTool('rotate-view'); } },
         'eyedropper': { label: 'Eyedropper (Stroke)', group: 'Tools', run: function () { VF.pickScreenColor('#clr-stroke'); } },
@@ -59,7 +59,7 @@
         'dup-key': { label: 'Duplicate Frame', group: 'Playback', run: function () { $('#btn-add-dup').click(); } },
         'del-key': { label: 'Delete Frame', group: 'Playback', run: function () { $('#btn-del-node').click(); } },
 
-        /* Layers (Pompedin extra — Moho selects layers via panel) */
+        /* Layers */
         'layer-up': { label: 'Select Layer Above', group: 'Layers', run: function () { navLayer(-1); } },
         'layer-down': { label: 'Select Layer Below', group: 'Layers', run: function () { navLayer(1); } },
 
@@ -74,36 +74,36 @@
         'sym-v': { label: 'V Symmetry  (Pompedin extra)', group: 'Canvas', run: function () { toggleSym('V'); } }
     };
 
-    /* ── Moho Pro 13.5 default bindings (⌘→Ctrl, ⌥→Alt) ── */
+    /* ── Default bindings (⌘→Ctrl, ⌥→Alt) ── */
     var DEFAULT_KEYMAP = {
-        'tool-select': 't',          // Moho: Transform Points
-        'tool-brush': 'f',           // Moho: Freehand
-        'tool-lasso': 'g',           // Moho: Select Points (group)
-        'tool-eraser': 'e',          // Moho: Eraser
-        'tool-fill': 'p',            // Moho: Paint Bucket
-        'tool-hide-edge': 'h',       // Moho: Hide Edge
-        'tool-translate': 'm',       // Moho: Transform Layer
-        'tool-rotate': 'r',          // no Moho layer-rotate key
-        'tool-scale': 's',           // no Moho layer-scale key
-        'tool-camera': '4',          // Moho: Track Camera
-        'tool-zoom': 'z',            // no Moho workspace-zoom tool key
-        'tool-rotate-view': '8',     // Moho: Rotate Workspace
-        'eyedropper': 'l',           // Moho: Eyedropper
+        'tool-select': 't',
+        'tool-brush': 'f',
+        'tool-lasso': 'g',
+        'tool-eraser': 'e',
+        'tool-fill': 'p',
+        'tool-hide-edge': 'h',
+        'tool-translate': 'm',
+        'tool-rotate': 'r',
+        'tool-scale': 's',
+        'tool-camera': '4',
+        'tool-zoom': 'z',
+        'tool-rotate-view': '8',
+        'eyedropper': 'l',
 
-        'play': 'space',             // Moho: Play / Stop
-        'next-frame': 'arrowright',  // Moho: Forward
-        'prev-frame': 'arrowleft',   // Moho: Back
-        'blank-key': 'f5',           // Moho: New Frame
-        'dup-key': 'f6',             // Moho: Duplicate Frame
-        'del-key': 'shift+f5',       // Moho: Delete Frame
+        'play': 'space',
+        'next-frame': 'arrowright',
+        'prev-frame': 'arrowleft',
+        'blank-key': 'f5',           // New Frame
+        'dup-key': 'f6',             // Duplicate Frame
+        'del-key': 'shift+f5',       // Delete Frame
 
         'layer-up': 'arrowup',
         'layer-down': 'arrowdown',
 
-        'reset-view': 'home',        // Moho: Reset View
-        'fit-screen': 'shift+home',  // Moho: View All
-        'toggle-grid': 'ctrl+g',     // Moho: Grid
-        'toggle-onion': 'ctrl+l',    // Moho: Enable Onion Skins
+        'reset-view': 'home',
+        'fit-screen': 'shift+home',
+        'toggle-grid': 'ctrl+g',
+        'toggle-onion': 'ctrl+l',
 
         'sym-h': 'shift+h',
         'sym-v': 'shift+v'
@@ -111,7 +111,7 @@
 
     /* Combos owned elsewhere — never reassignable from the editor. */
     var RESERVED = [
-        'escape', 'delete', 'backspace',
+        'escape', 'enter', 'delete', 'backspace',
         'ctrl+z', 'ctrl+y', 'ctrl+s', 'ctrl+shift+s',
         'ctrl+c', 'ctrl+v', 'ctrl+x', 'ctrl+a'
     ];

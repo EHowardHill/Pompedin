@@ -96,6 +96,14 @@
         // The paper layers were recreated — all sync markers are stale,
         // and any live selection context belongs to discarded items.
         if (VF._plResetSync) VF._plResetSync();
+
+        // The selection gizmo lives on fgLayer (which is NOT rebuilt here)
+        // and selSegments reference items that were just destroyed. Drop
+        // both, or a "select rectangle" keeps floating over artwork that
+        // no longer exists (and Delete/Escape act on dead references).
+        VF.selSegments = [];
+        VF.selectMode = 'object';
+        if (VF.clearHandles) VF.clearHandles();
         if (VF.clearSelStyle) VF.clearSelStyle();
 
         S.layers.forEach(function (l) {
@@ -116,7 +124,9 @@
     };
 
     VF.execUndo = function () {
-        if (VF.undoStack.length === 0) return;
+        // A silent no-op makes undo feel broken ("I pressed Ctrl+Z and
+        // nothing happened") — say so instead.
+        if (VF.undoStack.length === 0) { VF.toast('Nothing to undo'); return; }
         syncLayerState();
         VF.redoStack.push(snapshotLayers());
         var snap = VF.undoStack.pop();
@@ -126,7 +136,7 @@
     };
 
     VF.execRedo = function () {
-        if (VF.redoStack.length === 0) return;
+        if (VF.redoStack.length === 0) { VF.toast('Nothing to redo'); return; }
         syncLayerState();
         VF.undoStack.push(snapshotLayers());
         var snap = VF.redoStack.pop();

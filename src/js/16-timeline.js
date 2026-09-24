@@ -979,6 +979,26 @@
             e.preventDefault();
         });
 
+        /* ── Roll the wheel over the timeline to scrub frames ──
+           One notch = one frame; trackpads accumulate. Shift+wheel
+           scrolls the layer rows vertically instead (the label column
+           wheel scrolls rows too). */
+        var tlWheelAcc = 0;
+        $tlScroll.on('wheel', function (e) {
+            var oe = e.originalEvent;
+            if (e.shiftKey) {
+                var dy = oe.deltaMode === 1 ? oe.deltaY * 40 : oe.deltaY;
+                $(this).scrollTop($(this).scrollTop() + dy);
+            } else {
+                var r = VF._wheelNotches(tlWheelAcc, oe.deltaY, oe.deltaMode);
+                tlWheelAcc = r.acc;
+                if (r.notches !== 0 && !S.tl.playing) {
+                    VF.goFrame(S.tl.frame + r.notches);
+                }
+            }
+            e.preventDefault();
+        });
+
         $(window).on('resize', function () {
             if (VF.syncTimelineScrollbar) VF.syncTimelineScrollbar();
         });

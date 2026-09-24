@@ -22,6 +22,14 @@ audio) for sections 2–6.
       appear on the second launch; Help → Getting Started re-opens it
 - [ ] The Keys (shortcuts) ribbon button opens the remapping panel;
       remapping a key works and survives restart
+- [ ] Shortcut surfaces agree with DEFAULT_KEYMAP (36-shortcuts.js):
+      timeline button tooltips (New Frame F5, Duplicate F6, Delete
+      Shift+F5, Play Space), left-toolbar tooltips, the Help dialog
+      shortcut list, and docs/MANUAL.md — a stale "(F6)" on the New
+      Frame button has bitten us before
+- [ ] Frame-key spot check: F5 adds a blank keyframe, F6 duplicates the
+      current frame and advances, Shift+F5 deletes the keyframe at the
+      playhead, Space plays/stops
 - [ ] Window title shows "Pompedin — Untitled"
 - [ ] Seeded "Layer 1" exists and is active
 - [ ] Canvas centered; pan (middle-drag) and zoom (scroll) work
@@ -40,6 +48,22 @@ audio) for sections 2–6.
 - [ ] Every tool: one no-op click on a **tweened** frame does NOT create a
       keyframe (timeline shows no new key) — this is the Phase 0 regression
 - [ ] Drawing on a tweened frame DOES create a keyframe when you really draw
+
+### Mouse & pen
+
+- [ ] Right-drag (and pen side button) pans; **Shift**+right-drag zooms;
+      **Ctrl**+right-drag rotates — and the modifier can be switched
+      mid-drag
+- [ ] A plain right-click (no movement) still opens the context menu
+      everywhere it did before (timeline keys, camera track, switch dots)
+- [ ] Wheel over the canvas zooms; wheel over the timeline grid scrubs
+      one frame per notch (Shift+wheel scrolls the layer rows); wheel
+      over the labels column scrolls rows
+- [ ] Wheel over a number field (e.g. brush size) adjusts by one step;
+      Ctrl = half step, Shift = double step; min/max are respected
+- [ ] Right-drag in a number field adjusts it sideways; a right-click
+      without movement still opens the field's context menu
+- [ ] Field wheel/adjust works with the pen (barrel button = right)
 
 ## 3. Timeline, Tweens & Loops
 

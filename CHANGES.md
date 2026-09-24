@@ -40,6 +40,6 @@ I went through all 35 JS modules, the CSS, and the Rust top-to-bottom. This is s
 
 **11. Ctrl+X won't cut camera keyframes.** In `23-keyboard.js`, the timeline cut path explicitly `return`s on `sel.l === '__camera'`, but Ctrl+C copies camera keys and Delete removes them. Just an inconsistency.
 
-**12. Stale shortcut letters in the left-toolbar tooltips.** Carrying over from the Moho remap: the `data-tip` strings in `index.html` still say `Brush (B)`, `Paint Bucket (G)`, `Select / Edit Vertices (V)`, `Camera (C)`, `Zoom (Z / Scroll)`, etc., which no longer match the defaults (F, P, T, 4…). Cosmetic, but it's user-facing and wrong now.
+**12. Stale shortcut letters in the left-toolbar tooltips.** Carrying over from the shortcut remap: the `data-tip` strings in `index.html` still say `Brush (B)`, `Paint Bucket (G)`, `Select / Edit Vertices (V)`, `Camera (C)`, `Zoom (Z / Scroll)`, etc., which no longer match the defaults (F, P, T, 4…). Cosmetic, but it's user-facing and wrong now.
 
 If you want, I can turn the top two into actual patches — they're both small, surgical fixes (a couple of lines in `saveFrame` and in the init/new-project flow) and they're the only ones in here that can quietly corrupt a user's animation.

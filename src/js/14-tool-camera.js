@@ -73,41 +73,73 @@
     }, { passive: false });
 
     // ═══════════════════════════════════════════════════
-    //  Global Panning (Middle-Click OR Pen Side Button)
+    //  Global View Navigation — right-button drag:
+    //    · plain right-drag (or pen side button) = pan
+    //    · Shift + right-drag = zoom
+    //    · Ctrl/Cmd + right-drag = rotate workspace
+    //  The modifier is re-read on every move, so you can switch
+    //  between pan/zoom/rotate mid-drag.
     // ═══════════════════════════════════════════════════
-    var isMiddlePanning = false, middlePanStart = null;
+    var isNavDragging = false, navLastPt = null;
 
     $(cvs).on('pointerdown', function (e) {
         var P = getP();
         var ev = e.originalEvent;
         if (ev.button === 2 || (ev.pointerType === 'pen' && ev.button === 5)) {
             e.preventDefault();
-            isMiddlePanning = true;
-            middlePanStart = new P.Point(ev.clientX, ev.clientY);
+            isNavDragging = true;
+            navLastPt = new P.Point(ev.clientX, ev.clientY);
             cvs.style.cursor = 'grab';
         }
     });
 
     $(window).on('pointermove', function (e) {
-        var P = getP();
-        if (isMiddlePanning && middlePanStart) {
-            var ev = e.originalEvent;
-            var currentPt = new P.Point(ev.clientX, ev.clientY);
+        if (!isNavDragging || !navLastPt) return;
 
-            var pLast = VF.view.viewToProject(middlePanStart);
+        var P = getP();
+        var ev = e.originalEvent;
+        var currentPt = new P.Point(ev.clientX, ev.clientY);
+
+        if (ev.ctrlKey || ev.metaKey) {
+            // ── Rotate (same math as the Rotate Workspace tool) ──
+            var rect = cvs.getBoundingClientRect();
+            var cx = rect.left + rect.width / 2;
+            var cy = rect.top + rect.height / 2;
+
+            var a1 = Math.atan2(navLastPt.y - cy, navLastPt.x - cx);
+            var a2 = Math.atan2(currentPt.y - cy, currentPt.x - cx);
+            var deltaDeg = (a2 - a1) * (180 / Math.PI);
+
+            // Handle math wraparound
+            if (deltaDeg > 180) deltaDeg -= 360;
+            if (deltaDeg < -180) deltaDeg += 360;
+
+            VF.view.rotate(deltaDeg, VF.view.center);
+            VF.viewRotation = (VF.viewRotation || 0) + deltaDeg;
+            cvs.style.cursor = 'alias';
+        } else if (ev.shiftKey) {
+            // ── Zoom (same math as the Zoom tool: drag up = in) ──
+            var f = 1 + (currentPt.y - navLastPt.y) * -0.006;
+            VF.view.zoom = Math.max(.05, Math.min(16, VF.view.zoom * f));
+            cvs.style.cursor = 'zoom-in';
+        } else {
+            // ── Pan (viewToProject tracks the mouse even when rotated) ──
+            var pLast = VF.view.viewToProject(navLastPt);
             var pCur = VF.view.viewToProject(currentPt);
             VF.view.center = VF.view.center.subtract(pCur.subtract(pLast));
-
-            middlePanStart = currentPt;
-            VF.updateInfo();
-            VF.drawBorder();
+            cvs.style.cursor = 'grab';
         }
+
+        navLastPt = currentPt;
+        VF.updateInfo();
+        VF.drawBorder();
     });
 
     $(window).on('pointerup', function (e) {
         var ev = e.originalEvent;
-        if (isMiddlePanning && (ev.button === 2 || ev.pointerType === 'pen')) {
-            isMiddlePanning = false;
+        if (isNavDragging && (ev.button === 2 || ev.pointerType === 'pen')) {
+            isNavDragging = false;
+            navLastPt = null;
             VF.setTool(S.tool);
         }
     });
@@ -136,8 +168,8 @@
 
         if (!isCtrlLeft && !isMiddle) return;
 
-        // Don't interfere if pan is already active
-        if (isMiddlePanning) return;
+        // Don't interfere if view navigation is already active
+        if (isNavDragging) return;
 
         var P = getP();
         e.preventDefault();

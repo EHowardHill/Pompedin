@@ -9,6 +9,7 @@
         "core:default",
         "core:window:allow-destroy",
         "core:window:allow-set-title",
+        "window-state:default",
         "dialog:default",
         "dialog:allow-ask",
         "dialog:allow-save",

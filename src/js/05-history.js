@@ -11,6 +11,13 @@
         var res = VF.getResolvedFrame(l, S.tl.frame);
         var targetFrame = res ? res.keyFrame : S.tl.frame;
 
+        // PERFORMANCE: when the paper layer is already in sync with the
+        // stored frame (04-serialization.js tracks this), re-serializing
+        // it would produce identical data — skip the serPL pass entirely.
+        // This runs at the start of every saveHistory, so it's a major
+        // win for edit-heavy sessions.
+        if (VF._plSynced && VF._plSynced(l.id, res ? res.data : null)) return;
+
         if (l.type === 'vector') {
             // serPL exports children in their local coordinate space.
             // Because render() sets `pl.applyMatrix = false`, the layer-level
@@ -28,11 +35,13 @@
             if (serialized.length === 0 && pl.children.length > 0) return;
 
             l.frames[targetFrame] = serialized;
+            if (VF._plMarkSync) VF._plMarkSync(l.id, serialized);
         } else if (l.type === 'image') {
             // Image rasters track their own local matrices, independent 
             // of the parent layer's transform, so this avoids the baking loop naturally.
             var r = VF.pLayers[l.id].children.find(function (c) { return c.className === 'Raster'; });
             l.frames[targetFrame] = r ? { matrix: r.matrix.values } : [];
+            if (VF._plMarkSync) VF._plMarkSync(l.id, l.frames[targetFrame]);
         }
     }
 
@@ -55,7 +64,18 @@
 
     VF.saveHistory = function () {
         syncLayerState();
-        VF.undoStack.push(snapshotLayers());
+        var snap = snapshotLayers();
+
+        // PERFORMANCE: skip duplicate snapshots — a no-op saveHistory (the
+        // state is identical to the top of the undo stack) must not fill
+        // the history with redundant entries.
+        if (VF.undoStack.length > 0 && VF.undoStack[VF.undoStack.length - 1] === snap) {
+            VF.redoStack = [];   // an edit attempt still invalidates redo
+            VF._isDirty = true;
+            return;
+        }
+
+        VF.undoStack.push(snap);
         if (VF.undoStack.length > VF.MAX_HISTORY) VF.undoStack.shift();
         VF.redoStack = [];
         VF._isDirty = true; // Mark as unsaved
@@ -72,6 +92,11 @@
 
         Object.values(VF.pLayers).forEach(function (pl) { pl.remove(); });
         for (var k in VF.pLayers) delete VF.pLayers[k];
+
+        // The paper layers were recreated — all sync markers are stale,
+        // and any live selection context belongs to discarded items.
+        if (VF._plResetSync) VF._plResetSync();
+        if (VF.clearSelStyle) VF.clearSelStyle();
 
         S.layers.forEach(function (l) {
             if (VF.isFolder(l)) return;

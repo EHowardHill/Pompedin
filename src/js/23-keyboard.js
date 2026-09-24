@@ -553,7 +553,6 @@
                 }
                 VF.saveHistory();
                 var items = VF.getSelectedItems();
-                console.log('Deleting items:', items.map(function (it) { return it.className + ' (children: ' + (it.children ? it.children.length : 0) + ')'; }));
                 items.forEach(function (item) { item.remove(); });
                 VF.selSegments = [];
                 VF.clearHandles();

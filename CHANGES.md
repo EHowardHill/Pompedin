@@ -1,5 +1,15 @@
 I went through all 35 JS modules, the CSS, and the Rust top-to-bottom. This is static reading — I can't run it — but several of these I traced through carefully enough to be confident they reproduce. Ordered by how much they'd actually hurt.
 
+> **RE-VERIFICATION NOTE (2026-09-23, Phase 4 pass):** every item below was
+> re-checked against the current source. Items **1, 3, 4, 5, 7, 8, 9, 10, 11
+> and 12 are already fixed** in the code this document was written against —
+> see `TASKS.md` Phase 4 for the per-item verification notes. Item **2**
+> (tween/loop baking) was hardened further (tolerant comparator instead of
+> strict string equality, `04-serialization.js`), and item **6**
+> (selection-sync leaking into brush defaults) was restructured properly
+> (`VF.selStyle` separation, `30-selection-sync.js`). This file is kept as an
+> audit record only.
+
 ## Serious (data loss / corruption)
 
 **1. Undo immediately after launch (or after New Project) empties the project.**

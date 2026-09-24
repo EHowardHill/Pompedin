@@ -171,6 +171,9 @@
                     $('#btn-close-save').prop('disabled', false).text('Save & Close');
                     $('#modal-close').css('display', 'flex'); // Flex to center properly
                 } else {
+                    // Clean exit — remove the autosave so the next launch
+                    // doesn't offer crash recovery (see checkAutosaveRecovery).
+                    try { await window.__TAURI__.core.invoke('clear_autosave'); } catch (e) { }
                     // If there are no unsaved changes, explicitly destroy the window right now.
                     // We use destroy() instead of close() to prevent an infinite loop!
                     await appWindow.destroy();
@@ -184,6 +187,9 @@
             $('#btn-close-nosave').on('click', async function () {
                 $('#modal-close').hide();
                 VF._isDirty = false;
+                // Clean exit — remove the autosave so the next launch
+                // doesn't offer crash recovery.
+                try { await window.__TAURI__.core.invoke('clear_autosave'); } catch (e) { }
                 await appWindow.destroy();
             });
 
@@ -193,6 +199,9 @@
                 try {
                     await VF.doSave('save');
                     $('#modal-close').hide();
+                    // Clean exit — remove the autosave so the next launch
+                    // doesn't offer crash recovery.
+                    try { await window.__TAURI__.core.invoke('clear_autosave'); } catch (e) { }
                     await appWindow.destroy();
                 } catch (e) {
                     // Save was cancelled or failed — restore button so they can retry
@@ -212,6 +221,70 @@
         VF.tSelect.activate();
         VF.toast('Pompedin ready — draw with B, select with V');
 
+        /* ── i18n + Accessibility bootstrap ──
+           Applies the string table to data-i18n attributes, mirrors
+           tooltips into aria-labels for icon-only controls, marks the
+           modal overlays as dialogs, and makes the custom toggle
+           elements keyboard-operable. */
+        if (VF.applyI18n) VF.applyI18n();
+
+        $('[data-tip]').each(function () {
+            if (!this.hasAttribute('aria-label')) {
+                this.setAttribute('aria-label', this.getAttribute('data-tip'));
+            }
+        });
+        $('.mo-ov').attr('role', 'dialog').attr('aria-modal', 'true');
+
+        (function () {
+            var $toggles = $('.tgl').filter(function () {
+                return !this.hasAttribute('tabindex');
+            });
+            $toggles.attr('tabindex', '0').attr('role', 'button');
+            $(document).on('keydown', '.tgl', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    $(this).trigger('click');
+                }
+            });
+        })();
+
+        /* ── First-run Getting Started card (re-openable from Help) ── */
+        if (VF.maybeShowGettingStarted) VF.maybeShowGettingStarted();
+
+        /* ── CRASH REPORTING (local-only; About → Crash Reports) ──
+           Uncaught JS errors and Rust panics are appended to a local
+           crash log on the user's machine. Nothing is ever sent
+           anywhere; sharing the file is the user's explicit choice. */
+        if (window.__TAURI__) {
+            var _invoke = window.__TAURI__.core.invoke;
+            var _lastCrashLog = 0;
+
+            function recordCrash(kind, detail) {
+                var now = Date.now();
+                if (now - _lastCrashLog < 2000) return;   // throttle error storms
+                _lastCrashLog = now;
+                try {
+                    _invoke('log_crash', { message: kind + ': ' + detail });
+                } catch (e) { /* best effort */ }
+            }
+
+            window.addEventListener('error', function (ev) {
+                var where = ev.filename ? ' (' + ev.filename + ':' + ev.lineno + ')' : '';
+                recordCrash('uncaught error', (ev.message || 'unknown error') + where);
+            });
+            window.addEventListener('unhandledrejection', function (ev) {
+                var r = ev.reason;
+                recordCrash('unhandled rejection', r && r.message ? r.message : String(r));
+            });
+
+            // Mention saved crash details from the previous session, once
+            _invoke('consume_crash_flag').then(function (crashed) {
+                if (crashed) {
+                    VF.toast('A crash report from the previous session was saved — About → Crash Reports');
+                }
+            }).catch(function () { });
+        }
+
         // Mark project dirty whenever history is saved (i.e. any undoable change)
         var _origSaveHistory = VF.saveHistory;
         VF.saveHistory = function () {
@@ -221,8 +294,13 @@
 
         if (VF.updateWindowTitle) VF.updateWindowTitle();
 
-        // Start Autosave Background Timer
+        // Start Autosave Background Timer (doSave skips the tick when
+        // another save is in flight or a recovery prompt is pending)
         setInterval(function () { VF.doSave(true); }, 60000);
+
+        // Crash Recovery — clean exits delete the autosave, so one that
+        // survives to this point means the last session ended abnormally.
+        if (VF.checkAutosaveRecovery) VF.checkAutosaveRecovery();
     }
 
     $(document).ready(init);

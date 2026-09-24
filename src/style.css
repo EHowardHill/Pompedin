@@ -2324,3 +2324,65 @@ input[type="color"].csw {
     transform: rotate(180deg);
     /* chevron points down = click to open */
 }
+/* -------------------------------------------------------------
+   ACCESSIBILITY (Phase 5)
+   Keyboard focus is always visible: several components suppress the
+   default outline, so :focus-visible re-establishes it with the accent
+   color (the !important defeats the scattered `outline: none` rules).
+   ------------------------------------------------------------- */
+button:focus-visible,
+.tb:focus-visible,
+.tgl:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[contenteditable]:focus-visible,
+.sc-key:focus-visible,
+.ctx-i:focus-visible {
+    outline: 2px solid var(--accent) !important;
+    outline-offset: 1px;
+}
+
+/* Respect users who ask for reduced motion: animations and transitions
+   effectively become instant, and smooth scrolling is disabled. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* -------------------------------------------------------------
+   iPad / touch groundwork
+   1) Safe-area insets: with viewport-fit=cover, pad the layout
+      anchors so nothing sits under the home indicator, notch, or
+      rounded corners. env() is 0 on desktop, so this is inert there.
+   ------------------------------------------------------------- */
+#top-bar {
+    padding-top: max(0px, env(safe-area-inset-top));
+}
+
+#left-tools {
+    padding-left: max(0px, env(safe-area-inset-left));
+}
+
+#right-panel {
+    padding-right: max(0px, env(safe-area-inset-right));
+}
+
+#timeline-bar {
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+}
+
+/* 2) No iOS long-press text callout / magnifier on the canvas —
+      a long press there is a drawing gesture (Pencil or finger),
+      and its touch-action is already none. */
+#main-canvas {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}

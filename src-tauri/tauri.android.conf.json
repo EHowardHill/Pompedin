@@ -1,15 +1,11 @@
 {
-  "build": {
-    "devUrl": "http://localhost:1420",
-    "beforeDevCommand": "npm run serve"
-  },
-  "app": {
-    "security": {
-      "csp": null
+    "$schema": "https://schema.tauri.app/config/2",
+    "build": {
+        "frontendDist": "../src-dist",
+        "beforeBuildCommand": "node scripts/build-frontend.mjs"
+    },
+    "bundle": {
+        "externalBin": [],
+        "resources": []
     }
-  },
-  "bundle": {
-    "externalBin": [],
-    "resources": []
-  }
 }

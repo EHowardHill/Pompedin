@@ -100,24 +100,6 @@
         reader.readAsArrayBuffer(file);
     };
 
-    /* Load from server (for project restore) */
-    VF.loadAudioFromURL = function (url, filename) {
-        ensureCtx();
-        fetch(url)
-            .then(function (r) { return r.arrayBuffer(); })
-            .then(function (buf) { return A.ctx.decodeAudioData(buf); })
-            .then(function (decoded) {
-                A.buffer = decoded;
-                A.filename = filename;
-                buildWaveformData();
-                VF.uiTimeline();
-                updateAudioLabel();
-            })
-            .catch(function (err) {
-                console.error('Audio load error:', err);
-            });
-    };
-
     function updateAudioLabel() {
         var el = document.getElementById('audio-label');
         if (el) {

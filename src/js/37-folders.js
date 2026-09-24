@@ -59,7 +59,7 @@
         var topDefault = kids[kids.length - 1].id;
         var sw = folder.switch && folder.switch.frames;
         if (!sw) return topDefault;
-        var keys = Object.keys(sw).map(Number).sort(function (a, b) { return a - b; });
+        var keys = VF.cachedSortedKeys(sw);
         if (keys.length === 0) return topDefault;
         var chosen = sw[keys[0]];
         for (var i = 0; i < keys.length; i++) {

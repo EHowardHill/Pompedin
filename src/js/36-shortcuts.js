@@ -306,6 +306,9 @@
         $modal.css('display', 'flex');
     }
 
+    /** Public entry point so the ribbon Keys button can open the panel. */
+    VF.showShortcuts = openModal;
+
     function closeModal() {
         stopListening();
         if ($modal) $modal.hide();

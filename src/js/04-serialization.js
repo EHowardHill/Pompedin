@@ -4,10 +4,110 @@
     var S = VF.S, P;
     function getP() { if (!P) P = VF.P; return P; }
 
+    /* PERFORMANCE: memoizes the expensive vector-tween interpolation
+       (JSON parse + import + interpolate + re-export per stroke), which
+       previously ran on every render for every tweened layer. Validated
+       by reference: frame data arrays are always replaced wholesale
+       (never mutated in place), and prev/next are checked too because a
+       keyframe *move* re-uses the same array object under a new key.
+       History restores create fresh layer objects, which drops the
+       per-layer cache automatically (WeakMap). */
+    var _tweenCache = new WeakMap();   // layer -> Map(frame -> entry)
+
+    /* Tolerant equality for frame data (arrays of JSON strings, or a
+       matrix object for image layers).
+
+       saveFrame() uses this to decide whether a derived (tweened or
+       looped) frame has actually been edited before writing a keyframe.
+       A strict string comparison is not safe here: the deserialize →
+       re-serialize round trip can introduce harmless float drift (and
+       texture strokes embed a second JSON document inside pathJSON),
+       which would make an untouched derived frame look "edited" and
+       silently bake it into a hard keyframe, breaking the tween/loop.
+       Numbers compare within a small relative epsilon; strings that
+       differ but both parse as JSON are compared recursively. */
+    function _deepEq(a, b) {
+        if (a === b) return true;
+        if (typeof a === 'number' && typeof b === 'number') {
+            var scale = Math.max(1, Math.abs(a), Math.abs(b));
+            return Math.abs(a - b) <= 1e-6 * scale;
+        }
+        if (typeof a === 'string' && typeof b === 'string') {
+            var ca = a.charAt(0), cb = b.charAt(0);
+            if ((ca === '{' || ca === '[') && ca === cb) {
+                try { return _deepEq(JSON.parse(a), JSON.parse(b)); }
+                catch (e) { return false; }
+            }
+            return false;
+        }
+        if (Array.isArray(a) && Array.isArray(b)) {
+            if (a.length !== b.length) return false;
+            for (var i = 0; i < a.length; i++) {
+                if (!_deepEq(a[i], b[i])) return false;
+            }
+            return true;
+        }
+        if (a && b && typeof a === 'object' && typeof b === 'object') {
+            var ka = Object.keys(a), kb = Object.keys(b);
+            if (ka.length !== kb.length) return false;
+            for (var j = 0; j < ka.length; j++) {
+                if (!Object.prototype.hasOwnProperty.call(b, ka[j])) return false;
+                if (!_deepEq(a[ka[j]], b[ka[j]])) return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    function dataMatches(a, b) {
+        if (a === b) return true;
+        if (Array.isArray(a) && Array.isArray(b)) {
+            if (a.length !== b.length) return false;
+            for (var i = 0; i < a.length; i++) {
+                var ea = a[i], eb = b[i];
+                if (typeof ea === 'string' && typeof eb === 'string') {
+                    if (ea === eb) continue;
+                    try {
+                        if (_deepEq(JSON.parse(ea), JSON.parse(eb))) continue;
+                    } catch (e) { }
+                    return false;
+                }
+                if (!_deepEq(ea, eb)) return false;
+            }
+            return true;
+        }
+        return _deepEq(a, b);
+    }
+
+    // Exposed for unit tests (tests/ run under Node with a Paper.js stub).
+    VF._dataMatches = dataMatches;
+
+    /* ── PERFORMANCE: paper-layer sync tracking ──────────────────
+       The active layer's paper layer is the live editing surface:
+       tools mutate it directly and VF.saveFrame() serializes it back.
+       Rebuilding it from data on every VF.render() (80+ call sites) is
+       redundant whenever the paper layer already displays the resolved
+       data — after saveFrame (pl IS the source of the data), after
+       syncLayerState, or when the resolved data reference is unchanged
+       (scrubbing between non-keyframes, repeated renders).
+
+       Frame data arrays are always replaced wholesale (never mutated
+       in place) — the same invariant the other caches rely on — so
+       reference identity is a reliable invalidation signal. Tool edits
+       always end in saveFrame (which re-marks), and _isH helper items
+       live on fgLayer, not on pl, so skipping a rebuild leaks nothing. */
+    VF._plSync = {};   // layer id -> { dataRef: what pl was last built from }
+    VF._plMarkSync = function (id, dataRef) { VF._plSync[id] = { dataRef: dataRef }; };
+    VF._plSynced = function (id, dataRef) {
+        var s = VF._plSync[id];
+        return !!(s && s.dataRef === dataRef);
+    };
+    VF._plResetSync = function () { VF._plSync = {}; };
+
     VF.getResolvedFrame = function (layer, f) {
         var P = getP();
         if (!layer.frames) return null;
-        var keys = Object.keys(layer.frames).map(Number).sort(function (a, b) { return a - b; });
+        var keys = VF.cachedSortedKeys(layer.frames);
         if (keys.length === 0) return null;
 
         var prev = -1, next = -1;
@@ -74,6 +174,14 @@
 
         if (layer.type === 'vector') {
             if (dataA.length !== dataB.length) return { keyFrame: prev, data: dataA };
+
+            var tCache = _tweenCache.get(layer);
+            if (!tCache) { tCache = new Map(); _tweenCache.set(layer, tCache); }
+            else {
+                var tHit = tCache.get(f);
+                if (tHit && tHit.prev === prev && tHit.next === next &&
+                    tHit.a === dataA && tHit.b === dataB) return tHit.res;
+            }
 
             var resultData = [];
             var lerp = function (a, b, amt) { return a + (b - a) * amt; };
@@ -152,10 +260,14 @@
                         tmpA2.remove(); tmpB2.remove();
                     }
                 } catch (e) {
+                    VF.reportError('tween', e);
                     resultData.push(dataA[idx]);
                 }
             }
-            return { keyFrame: f, data: resultData, isTween: true };
+            var tweenRes = { keyFrame: f, data: resultData, isTween: true };
+            if (tCache.size >= 64) tCache.clear();   // bound memory when scrubbing
+            tCache.set(f, { prev: prev, next: next, a: dataA, b: dataB, res: tweenRes });
+            return tweenRes;
         }
 
         return { keyFrame: prev, data: dataA };
@@ -264,7 +376,9 @@
                 }
 
                 pl.importJSON(j);
-            } catch (e) { }
+            } catch (e) {
+                VF.reportError('deserialize', e);
+            }
         });
     };
 
@@ -284,13 +398,17 @@
             if (newData.length === 0 && pl.children.length > 0) return;
 
             if (isDerived && l.frames[S.tl.frame] === undefined) {
-                if (JSON.stringify(newData) === JSON.stringify(res.data)) {
-                    return;
+                if (dataMatches(newData, res.data)) {
+                    return;   // untouched derived frame — don't bake a keyframe
                 }
             }
 
             var targetFrame = (res && !isDerived) ? res.keyFrame : S.tl.frame;
             l.frames[targetFrame] = newData;
+
+            // The paper layer IS the source of newData — mark it in sync
+            // so the next render skips the rebuild.
+            VF._plMarkSync(l.id, newData);
 
             if (!l.cache) l.cache = {};
 
@@ -303,13 +421,14 @@
 
             // Apply the same guard for image layers
             if (isDerived && l.frames[S.tl.frame] === undefined) {
-                if (JSON.stringify(newImgData) === JSON.stringify(res.data)) {
-                    return;
+                if (dataMatches(newImgData, res.data)) {
+                    return;   // untouched derived frame — don't bake a keyframe
                 }
             }
 
             var targetFrameImg = (res && !isDerived) ? res.keyFrame : S.tl.frame;
             l.frames[targetFrameImg] = newImgData;
+            VF._plMarkSync(l.id, newImgData);
 
             if (l.tweens && Object.keys(l.tweens).length > 0) l.cache = {};
         }
@@ -325,12 +444,21 @@
         var targetFrame = res ? res.keyFrame : null;
 
         if (l.type === 'vector') {
-            pl.removeChildren();
 
             if (id === S.activeId || VF._exporting) {
+                // PERFORMANCE: already showing exactly this data? Skip
+                // the full deserialize-rebuild.
+                if (VF._plSynced(id, data)) return;
+                pl.removeChildren();
                 VF.desPL(pl, data);
+                VF._plMarkSync(id, data);
             } else {
-                if (targetFrame === null) return;
+                if (targetFrame === null) {
+                    if (VF._plSynced(id, null)) return;
+                    pl.removeChildren();
+                    VF._plMarkSync(id, null);
+                    return;
+                }
                 if (!l.cache) l.cache = {};
 
                 var dpr = window.devicePixelRatio || 1;
@@ -343,6 +471,11 @@
 
                 if (l.cache[targetFrame]) {
                     var cacheData = l.cache[targetFrame];
+
+                    // PERFORMANCE: already showing this cached raster?
+                    if (VF._plSynced(id, cacheData)) return;
+
+                    pl.removeChildren();
                     var r = new P.Raster({ canvas: cacheData.cvs });
                     r.position = new P.Point(cacheData.x, cacheData.y);
 
@@ -352,6 +485,7 @@
                     }
 
                     pl.addChild(r);
+                    VF._plMarkSync(id, cacheData);
                 } else {
                     VF.desPL(pl, data);
 
@@ -385,9 +519,15 @@
                         pl.removeChildren();
                         pl.addChild(raster);
                     }
+
+                    // Mark against the cache entry (undefined when the frame
+                    // rendered empty) so repeat renders skip the rebuild.
+                    VF._plMarkSync(id, l.cache[targetFrame]);
                 }
             }
         } else if (l.type === 'image' && l.imgData) {
+            // PERFORMANCE: already showing this matrix state? Skip the rebuild.
+            if (VF._plSynced(id, data)) return;
             pl.removeChildren();
             if (data || l.frames[0] !== undefined) {
                 var imgR = new P.Raster({ source: l.imgData });
@@ -398,13 +538,14 @@
                 }
                 pl.addChild(imgR);
             }
+            VF._plMarkSync(id, data);
         }
     };
 
     VF.getLayerTransform = function (layer, f) {
         var def = { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0 };
         if (!layer.transforms) return def;
-        var keys = Object.keys(layer.transforms).map(Number).sort(function (a, b) { return a - b; });
+        var keys = VF.cachedSortedKeys(layer.transforms);
         if (keys.length === 0) return def;
         if (keys.length === 1 || f <= keys[0]) return Object.assign({}, layer.transforms[keys[0]]);
         if (f >= keys[keys.length - 1]) return Object.assign({}, layer.transforms[keys[keys.length - 1]]);

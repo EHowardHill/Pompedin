@@ -32,7 +32,7 @@
         var cam = S.camera;
         if (!cam || !cam.frames) return defaultCam();
 
-        var keys = Object.keys(cam.frames).map(Number).sort(function (a, b) { return a - b; });
+        var keys = VF.cachedSortedKeys(cam.frames);
         if (keys.length === 0) return defaultCam();
         if (keys.length === 1) return $.extend({}, cam.frames[keys[0]]);
 

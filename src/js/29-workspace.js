@@ -25,13 +25,13 @@
                 if (parsed.canvasBgTransparent !== undefined) VF.wsPrefs.canvasBgTransparent = parsed.canvasBgTransparent;
                 if (parsed.tabletMode) VF.wsPrefs.tabletMode = parsed.tabletMode;
             }
-        } catch (e) { }
+        } catch (e) { VF.reportError('workspace-prefs', e); }
     }
 
     function saveWorkspacePrefs() {
         try {
             localStorage.setItem(WORKSPACE_KEY, JSON.stringify(VF.wsPrefs));
-        } catch (e) { }
+        } catch (e) { VF.reportError('workspace-prefs', e); }
     }
 
     function applyTheme() {

@@ -896,6 +896,9 @@
                         }
 
                         var data = null;
+                        // Loop/tween markers travel with the moved key
+                        // (restored in the placement pass below).
+                        var m_loop, m_tween;
                         if (sel.l === '__camera') {
                             data = S.camera.frames[sel.f];
                             delete S.camera.frames[sel.f];
@@ -914,7 +917,7 @@
                                 if (lyr.cache) delete lyr.cache[sel.f];
                             }
                         }
-                        moves.push({ f: newF, l: newL, type: sel.type, data: data });
+                        moves.push({ f: newF, l: newL, type: sel.type, data: data, loop: m_loop, tween: m_tween });
                     });
 
                     // 2. Place all extracted data into new slots

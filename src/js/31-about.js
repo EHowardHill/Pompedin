@@ -35,6 +35,27 @@
         $('#btn-about').on('click', VF.showAbout);
         $('#btn-help').on('click', VF.showHelp);
 
+        // Getting Started card (first-run tour, re-openable here)
+        $('#btn-getting-started').on('click', function () {
+            $('#modal-help').hide();
+            if (VF.showGettingStarted) VF.showGettingStarted();
+        });
+
+        // Keyboard shortcuts panel (built from the live keymap in
+        // 36-shortcuts.js, so it can never drift from the real bindings)
+        $('#btn-shortcuts').on('click', function () {
+            if (VF.showShortcuts) VF.showShortcuts();
+        });
+
+        // Crash Reports (local-only diagnostics — see 24-init.js hooks)
+        $('#about-open-crash').on('click', function () {
+            if (!window.__TAURI__) return;
+            window.__TAURI__.core.invoke('open_crash_reports').catch(function (e) {
+                VF.toast('Could not open the crash reports folder');
+                console.error(e);
+            });
+        });
+
         // Close Buttons
         $('#about-close').on('click', function () { $('#modal-about').hide(); });
         $('#help-close-x').on('click', function () { $('#modal-help').hide(); });

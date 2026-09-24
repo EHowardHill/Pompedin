@@ -57,6 +57,11 @@
     VF.undoStack = [];
     VF.redoStack = [];
     VF.MAX_HISTORY = 30;
+
+    // Saved-project format version. Files without the stamp are treated
+    // as version 1. Bump this when the save structure changes and add a
+    // matching migration step in migrateState() (20-project-io.js).
+    VF.FORMAT_VERSION = 1;
     VF.currentPressure = 1.0;
     VF._isDirty = false;
 
@@ -96,6 +101,24 @@
         };
     };
 
+    /* ── PERFORMANCE: cached sorted numeric-key lists ──
+       Per-render hot paths (frame resolution, layer transforms, camera
+       interpolation, switch resolution) all sort the numeric keys of a
+       keyed object on every call. The sorted list is cached per object;
+       an order-independent int32 hash of the key set detects any
+       added/removed/moved key and invalidates the cached sort. */
+    var _sortedKeysWM = new WeakMap();
+    VF.cachedSortedKeys = function (obj) {
+        if (!obj) return [];
+        var h = 0;
+        for (var k in obj) h = (Math.imul(h, 31) + (+k + 1)) | 0;
+        var hit = _sortedKeysWM.get(obj);
+        if (hit && hit.h === h) return hit.keys;
+        var keys = Object.keys(obj).map(Number).sort(function (a, b) { return a - b; });
+        _sortedKeysWM.set(obj, { h: h, keys: keys });
+        return keys;
+    };
+
     VF.smoothTol = function () { return [0, 0.5, 2, 5, 10, 22][VF.S.cfg.smooth] || 5; };
 
     VF.isPanInput = function (ev) {
@@ -105,6 +128,21 @@
     VF.toast = function (msg) {
         const el = $('<div class="toast-msg">').text(msg).appendTo('body');
         setTimeout(() => el.fadeOut(300, () => el.remove()), 2200);
+    };
+
+    /* ── Central error reporting ──
+       Every non-trivial catch routes through here instead of failing
+       silently: the error is always logged, and the user gets a toast
+       (rate-limited to one per context per 5 s so a loop of failures
+       can't spam the UI). Defensive catches where failure is expected
+       (pointer capture, best-effort cleanup, …) may stay silent. */
+    var _lastErrorReport = {};
+    VF.reportError = function (context, err) {
+        try { console.error('[' + context + ']', err); } catch (_) { }
+        var now = Date.now();
+        if (_lastErrorReport[context] && now - _lastErrorReport[context] < 5000) return;
+        _lastErrorReport[context] = now;
+        VF.toast('Something went wrong (' + context + ') — details in the console');
     };
 
 })();

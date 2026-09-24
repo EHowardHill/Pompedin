@@ -18,7 +18,7 @@
             if (isSelectFamily.indexOf(prevTool) !== -1) {
                 VF.clearHandles();
                 VF.selSegments = [];
-                if (VF.restoreBrushConfig) VF.restoreBrushConfig();
+                if (VF.clearSelStyle) VF.clearSelStyle();   // ribbon back to brush defaults
             }
         }
 

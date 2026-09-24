@@ -34,6 +34,39 @@ Frame-by-frame vector animation tool, built with Tauri 2 + Rust + Paper.js.
 
    The packaged app will be in `src-tauri/target/release/bundle/`.
 
+   Release builds first generate a bundled, minified, trimmed copy of the
+   frontend into `src-dist/` (38 scripts → one minified bundle; only the
+   runtime parts of `lib/` ship — FontAwesome's ~28 MB of source trees are
+   excluded). Dev mode keeps serving `src/` directly, so iteration is
+   unaffected. See `scripts/build-frontend.mjs`.
+
+## Documentation
+
+- **User manual** — [docs/MANUAL.md](docs/MANUAL.md): interface tour,
+  frame-by-frame workflow, tween vs. loop semantics, camera, export
+  options, and the default keymap. The in-app Help dialog covers the
+  same ground inside the app.
+- **iPad support** — [docs/IPAD-GUIDE.md](docs/IPAD-GUIDE.md): what
+  differs on iPad (input gestures, file sandbox, no sidecar processes,
+  safe areas), what is already handled, and the Mac-day checklist.
+- **Android support** — [docs/ANDROID-GUIDE.md](docs/ANDROID-GUIDE.md):
+  the Rust side check-compiles for Android (verified from this repo);
+  what's fixed, and the device/SDK checklist that remains.
+- **QA checklist** — [docs/QA-CHECKLIST.md](docs/QA-CHECKLIST.md)
+- **Preferences audit** — [docs/PREFERENCES.md](docs/PREFERENCES.md)
+- **FFmpeg licensing** — [docs/FFMPEG-LICENSING.md](docs/FFMPEG-LICENSING.md)
+
+## License
+
+Pompedin is licensed under the **BSD 3-Clause License** — see
+[LICENSE](LICENSE).
+
+Distributed packages additionally bundle FFmpeg (GPLv3 build, invoked as a
+separate process for MP4 export) and other third-party components under
+their own licenses — see `src-tauri/bin/LICENSE-FFMPEG.txt`,
+[docs/FFMPEG-LICENSING.md](docs/FFMPEG-LICENSING.md), and the in-app About
+dialog.
+
 ## Project Structure
 
 ```

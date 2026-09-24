@@ -41,73 +41,81 @@
        updates the ribbon controls to match.
        ═══════════════════════════════════════════════════ */
 
-    var _cachedBrushConfig = null;
+    /* ═══════════════════════════════════════════════════
+       SELECTION STYLE vs. NEW-STROKE DEFAULTS
+       ─────────────────────────────────────────────────
+       The ribbon serves two masters: with an active selection it
+       shows (and edits) the SELECTED items' properties; without one
+       it shows the new-stroke defaults (S.cfg). The old implementation
+       copied selection properties straight into S.cfg and tried to
+       restore the defaults afterwards — any path that missed the
+       restore leaked the selection's properties into the user's
+       brush defaults (e.g. selecting a stroke-only shape turned Fill
+       off for NEW strokes).
 
-    VF.cacheBrushConfig = function () {
-        if (!_cachedBrushConfig) {
-            _cachedBrushConfig = {
-                brushSize: S.cfg.brushSize,
-                strokeCol: S.cfg.strokeCol,
-                autoStroke: S.cfg.autoStroke,
-                fillCol: S.cfg.fillCol,
-                autoFill: S.cfg.autoFill,
-                tex: S.cfg.tex
-            };
-        }
+       Now the two are fully separate: selection reads/writes live in
+       VF.selStyle and never touch S.cfg. Drawing always reads S.cfg.
+       ═════════════════════════════════════════════════ */
+
+    /** Live selection context, or null when nothing is selected. */
+    VF.selStyle = null;
+
+    /** Point the ribbon controls at the new-stroke defaults (S.cfg). */
+    VF.refreshRibbonFromCfg = function () {
+        $('#rng-brush').val(S.cfg.brushSize);
+        $('#v-brush').val(S.cfg.brushSize);
+        $('#clr-stroke').val(S.cfg.strokeCol);
+        $('#tgl-stroke').toggleClass('on', S.cfg.autoStroke);
+        $('#clr-fill').val(S.cfg.fillCol);
+        $('#tgl-fill').toggleClass('on', S.cfg.autoFill);
+        $('#sel-tex').val(S.cfg.tex);
     };
 
-    VF.restoreBrushConfig = function () {
-        if (_cachedBrushConfig) {
-            S.cfg.brushSize = _cachedBrushConfig.brushSize;
-            S.cfg.strokeCol = _cachedBrushConfig.strokeCol;
-            S.cfg.autoStroke = _cachedBrushConfig.autoStroke;
-            S.cfg.fillCol = _cachedBrushConfig.fillCol;
-            S.cfg.autoFill = _cachedBrushConfig.autoFill;
-            S.cfg.tex = _cachedBrushConfig.tex;
-
-            // Sync UI back to freehand defaults
-            $('#rng-brush').val(S.cfg.brushSize);
-            $('#v-brush').val(S.cfg.brushSize);
-            $('#clr-stroke').val(S.cfg.strokeCol);
-            $('#tgl-stroke').toggleClass('on', S.cfg.autoStroke);
-            $('#clr-fill').val(S.cfg.fillCol);
-            $('#tgl-fill').toggleClass('on', S.cfg.autoFill);
-            $('#sel-tex').val(S.cfg.tex);
-
-            _cachedBrushConfig = null;
-        }
+    /** Drop the selection context and show the brush defaults again. */
+    VF.clearSelStyle = function () {
+        if (!VF.selStyle) return;
+        VF.selStyle = null;
+        VF.refreshRibbonFromCfg();
     };
 
     VF.syncUIFromSelection = function () {
         var items = VF.getSelectedItems();
 
-        // Restore brush defaults if the selection was cleared
+        // Selection cleared → back to the new-stroke defaults
         if (items.length === 0) {
-            if (VF.restoreBrushConfig) VF.restoreBrushConfig();
+            VF.clearSelStyle();
             return;
         }
 
-        // Cache the freehand brush config before the selection overrides it
-        if (VF.cacheBrushConfig) VF.cacheBrushConfig();
-
         var item = items[0];
+
+        // Build the selection context (displayed by the ribbon while the
+        // selection is active — S.cfg is never touched).
+        VF.selStyle = {
+            brushSize: S.cfg.brushSize,
+            strokeCol: S.cfg.strokeCol,
+            autoStroke: S.cfg.autoStroke,
+            fillCol: S.cfg.fillCol,
+            autoFill: S.cfg.autoFill,
+            tex: S.cfg.tex
+        };
+        var sel = VF.selStyle;
 
         /* ── Texture stroke group ── */
         if (item.data && item.data.isTextureStroke) {
             if (item.data.brushSize != null) {
-                var bs = Math.round(item.data.brushSize);
-                S.cfg.brushSize = bs;
-                $('#rng-brush').val(bs);
-                $('#v-brush').val(bs);
+                sel.brushSize = Math.round(item.data.brushSize);
+                $('#rng-brush').val(sel.brushSize);
+                $('#v-brush').val(sel.brushSize);
             }
             if (item.data.strokeCol) {
-                S.cfg.strokeCol = item.data.strokeCol;
-                S.cfg.autoStroke = true;
+                sel.strokeCol = item.data.strokeCol;
+                sel.autoStroke = true;
                 $('#clr-stroke').val(item.data.strokeCol);
                 $('#tgl-stroke').addClass('on');
             }
             if (item.data.tex && $('#sel-tex option[value="' + item.data.tex + '"]').length) {
-                S.cfg.tex = item.data.tex;
+                sel.tex = item.data.tex;
                 $('#sel-tex').val(item.data.tex);
             }
             return;
@@ -117,40 +125,37 @@
         var path = findFirstPath(item) || item;
 
         if (path.strokeWidth != null && path.strokeWidth > 0) {
-            var sw = Math.round(path.strokeWidth);
-            S.cfg.brushSize = sw;
-            $('#rng-brush').val(sw);
-            $('#v-brush').val(sw);
+            sel.brushSize = Math.round(path.strokeWidth);
+            $('#rng-brush').val(sel.brushSize);
+            $('#v-brush').val(sel.brushSize);
         }
 
         if (path.strokeColor) {
             try {
-                var hex = path.strokeColor.toCSS(true);
-                S.cfg.strokeCol = hex;
-                S.cfg.autoStroke = true;
-                $('#clr-stroke').val(hex);
+                sel.strokeCol = path.strokeColor.toCSS(true);
+                sel.autoStroke = true;
+                $('#clr-stroke').val(sel.strokeCol);
                 $('#tgl-stroke').addClass('on');
-            } catch (e) { }
+            } catch (e) { VF.reportError('selection-sync', e); }
         } else {
-            S.cfg.autoStroke = false;
+            sel.autoStroke = false;
             $('#tgl-stroke').removeClass('on');
         }
 
         if (path.fillColor) {
             try {
-                var hexF = path.fillColor.toCSS(true);
-                S.cfg.fillCol = hexF;
-                S.cfg.autoFill = true;
-                $('#clr-fill').val(hexF);
+                sel.fillCol = path.fillColor.toCSS(true);
+                sel.autoFill = true;
+                $('#clr-fill').val(sel.fillCol);
                 $('#tgl-fill').addClass('on');
-            } catch (e) { }
+            } catch (e) { VF.reportError('selection-sync', e); }
         } else {
-            S.cfg.autoFill = false;
+            sel.autoFill = false;
             $('#tgl-fill').removeClass('on');
         }
 
         /* Regular paths are never texture-based */
-        S.cfg.tex = 'none';
+        sel.tex = 'none';
         $('#sel-tex').val('none');
     };
 
@@ -259,14 +264,14 @@
             case 'enableStroke':
                 if (value) {
                     if (!item.strokeColor && item.strokeWidth != null)
-                        item.strokeColor = S.cfg.strokeCol;
+                        item.strokeColor = (VF.selStyle && VF.selStyle.strokeCol) || S.cfg.strokeCol;
                 } else {
                     item.strokeColor = null;
                 }
                 break;
             case 'enableFill':
                 if (value) {
-                    if (!item.fillColor) item.fillColor = S.cfg.fillCol;
+                    if (!item.fillColor) item.fillColor = (VF.selStyle && VF.selStyle.fillCol) || S.cfg.fillCol;
                 } else {
                     item.fillColor = null;
                 }

@@ -107,6 +107,24 @@
             var mp4Bg = (VF.wsPrefs && !VF.wsPrefs.canvasBgTransparent) ? VF.wsPrefs.canvasBgColor : '#ffffff';
 
             // 3. Loop through every frame
+            //
+            // PERFORMANCE (Phase 2): frames are sent as RAW BINARY over the
+            // IPC bridge (no base64 round-trip) and writes are PIPELINED —
+            // the webview rasterizes frame N+1 while Rust writes frame N.
+            // toBlob snapshots the canvas bitmap when called, so awaiting
+            // it before drawing the next frame is safe.
+            var inFlight = [];
+            var PIPELINE_DEPTH = 4;
+
+            function bytesToDataUrl(bytes) {
+                // Fallback encoder for platforms without raw-IPC support.
+                var bin = '';
+                for (var o = 0; o < bytes.length; o += 0x8000) {
+                    bin += String.fromCharCode.apply(null, bytes.subarray(o, o + 0x8000));
+                }
+                return 'data:image/png;base64,' + btoa(bin);
+            }
+
             for (let i = 0; i < S.tl.max; i++) {
                 S.tl.frame = i;
                 VF.render();       // Load items for this frame
@@ -134,15 +152,31 @@
                     ectx.drawImage(VF.cvs, 0, 0, VF.cvs.width, VF.cvs.height, 0, 0, S.canvas.w, S.canvas.h);
                 }
 
-                // Extract base64 data URL
-                let dataUrl = ec.toDataURL('image/png');
+                // PNG bytes — no base64 encoding in the hot path
+                const blob = await new Promise(function (res) { ec.toBlob(res, 'image/png'); });
+                const frameBytes = new Uint8Array(await blob.arrayBuffer());
 
-                // Send the frame to Rust to save in the temp directory
-                await invoke('mp4_frame', {
-                    sessionId: sessionId,
-                    frameIndex: i,
-                    image: dataUrl
-                });
+                // Fire the write; keep at most PIPELINE_DEPTH in flight
+                (function (idx, bytes) {
+                    inFlight.push(
+                        invoke('mp4_frame_raw', bytes, {
+                            headers: {
+                                'session-id': sessionId,
+                                'frame-index': String(idx)
+                            }
+                        }).catch(function () {
+                            // Platforms without raw-IPC support (Android)
+                            // fall back to the original base64 command.
+                            return invoke('mp4_frame', {
+                                sessionId: sessionId,
+                                frameIndex: idx,
+                                image: bytesToDataUrl(bytes)
+                            });
+                        })
+                    );
+                })(i, frameBytes);
+
+                while (inFlight.length >= PIPELINE_DEPTH) await inFlight.shift();
 
                 // Update UI progress (Frame rendering represents roughly the first 50% of the time)
                 let renderPercent = Math.round(((i + 1) / S.tl.max) * 50);
@@ -150,6 +184,9 @@
                 $('#export-status-text').text('Rendering frame ' + (i + 1) + ' of ' + S.tl.max);
                 $btn.text('Exporting ' + (i + 1) + ' / ' + S.tl.max);
             }
+
+            // Wait for the last frames to land before encoding
+            await Promise.all(inFlight);
 
             VF._exporting = false; // Turn off high-res forced render
             $btn.text('Encoding Video...');

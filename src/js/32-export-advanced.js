@@ -766,6 +766,67 @@
         $('#btn-export-sheet').on('click', VF.exportSpritesheet);
         $('#btn-export-gif').on('click', VF.exportGIF);
         $('#btn-export-seq').on('click', VF.exportSequence);
+
+        /* ── Export presets: one click sets range + scale (+ GIF options)
+              to sane values for common targets, instead of dialing the
+              raw knobs. The scale dropdown gets a computed option when
+              the exact ratio isn't one of the fixed choices. ── */
+        var PRESETS = {
+            canvas: null,   // canvas resolution, 100%
+            yt1080: { w: 1920, h: 1080 },
+            yt4k: { w: 3840, h: 2160 },
+            webgif: { w: 960, h: 540, gifColors: 128, gifDither: true }
+        };
+
+        function setScaleOption(scale, label) {
+            var $sel = $('#export-scale');
+            // Remove previously injected computed options
+            $sel.find('option[data-computed]').remove();
+            var exact = $sel.find('option[value="' + scale + '"]').length > 0;
+            if (!exact) {
+                $sel.append('<option value="' + scale + '" data-computed>' + label + '</option>');
+            }
+            $sel.val(String(scale));
+        }
+
+        $('#export-preset').on('change', function () {
+            var key = $(this).val();
+            var p = PRESETS[key];
+
+            // Range: the full timeline is the sane default for presets
+            $('#export-from').val(1);
+            $('#export-to').val(S.tl.max);
+
+            if (!p) {
+                // Canvas preset: 1:1 with the project resolution
+                setScaleOption(1, '100%');
+                VF.toast(VF.t('toast.presetCanvas'));
+                return;
+            }
+
+            // Fit the target while preserving aspect ratio: scale by the
+            // more constrained axis.
+            var scale = Math.min(p.w / S.canvas.w, p.h / S.canvas.h);
+            scale = Math.max(0.1, Math.round(scale * 100) / 100);
+            var outW = Math.round(S.canvas.w * scale);
+            var outH = Math.round(S.canvas.h * scale);
+            setScaleOption(scale, Math.round(scale * 100) + '%');
+
+            if (p.gifColors !== undefined) {
+                VF.exportOpts.gifColors = p.gifColors;
+                $('#export-gif-colors').val(String(p.gifColors));
+            }
+            if (p.gifDither !== undefined) {
+                VF.exportOpts.gifDither = p.gifDither;
+                $('#tgl-gif-dither').toggleClass('on', p.gifDither);
+            }
+
+            VF.toast(VF.t('toast.presetApplied', {
+                name: VF.t('preset.' + key),
+                w: outW,
+                h: outH
+            }));
+        });
     });
 
 })();

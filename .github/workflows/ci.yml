@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  js:
+    name: JS lint + tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Version sync check (package.json is canonical)
+        run: npm run version:check
+
+      - name: Lint (errors only — legacy warnings are tracked, not blocked)
+        run: npm run lint:errors
+
+      - name: Unit tests
+        run: npm test
+
+  rust:
+    name: Rust clippy + tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install Tauri system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Clippy
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets
+
+      - name: Unit tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml
+
+  android-check:
+    # Keeps the aarch64-linux-android target compiling — the #[cfg] paths
+    # for the MediaCodec encoder plugin are invisible to desktop builds
+    # (three Android build breakers have already been caught this way).
+    # This is a check-compile only; full APK builds happen per the
+    # docs/ANDROID-GUIDE.md checklist on a machine with the Android SDK.
+    name: Rust Android target check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: android
+
+      - name: Check-compile for Android
+        run: cargo check --target aarch64-linux-android --manifest-path src-tauri/Cargo.toml
+
+  build:
+    name: Build (${{ matrix.os }})
+    # Release builds only for version tags. NOTE: tauri.conf.json bundles
+    # an external ffmpeg binary (externalBin: bin/ffmpeg) — each target
+    # platform needs its own binary in src-tauri/bin/ (see
+    # https://v2.tauri.app/develop/sidecar/ for the naming convention)
+    # or this job will fail on that platform.
+    if: startsWith(github.ref, 'refs/tags/v')
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install Tauri system dependencies (Linux only)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build release bundle
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

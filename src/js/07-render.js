@@ -4,6 +4,27 @@
     var S = VF.S, P;
     function getP() { if (!P) P = VF.P; return P; }
 
+    /* PERFORMANCE: cache of built onion skin groups. The original code
+       rebuilt every skin from JSON (JSON.parse + importJSON + simplify
+       per stroke) on every render. Groups are now cached and reused
+       while their source data array, opacity and tint direction are
+       unchanged. Frame data arrays are always replaced wholesale, never
+       mutated in place, so reference identity is a reliable
+       invalidation signal. */
+    VF._onionCache = new Map();
+    VF.clearOnionCache = function () { VF._onionCache.clear(); };
+
+    /* Cache-hit test for onion skin groups (exposed for unit tests):
+       a cached group is reusable only while the skin opacity and the
+       source data array identity are unchanged. Frame data arrays are
+       always replaced wholesale, never mutated in place, so identity is
+       a reliable invalidation signal. */
+    VF._onionCacheReusable = function (cacheKey, op, dataRef) {
+        var cached = VF._onionCache.get(cacheKey);
+        return (cached && cached.op === op && cached.dataRef === dataRef)
+            ? cached.group : null;
+    };
+
     function tintTree(item, tintColor, skinOpacity) {
         if (!item) return;
 
@@ -75,24 +96,20 @@
 
         if (S.cfg.onion && !S.tl.playing) {
 
-            var oldZoom = VF.view.zoom;
-            var oldCenter = VF.view.center.clone();
-            VF.view.zoom = 1;
-            VF.view.center = new P.Point(S.canvas.w / 2, S.canvas.h / 2);
-            VF.view.update();
+            /* PERFORMANCE: resolve all skins first. Cached skins are
+               reused as-is; the view juggle + forced redraws below only
+               run when at least one skin actually needs rebuilding. */
+            var jobs = [];
+            var needsBuild = false;
 
-            S.onions.forEach(function (skin) {
+            S.onions.forEach(function (skin, si) {
                 var targetF = skin.rel ? f + skin.val : skin.val - 1;
                 if (targetF < 0 || targetF >= S.tl.max || targetF === f) return;
 
                 var isFuture = skin.rel ? skin.val > 0 : (skin.val - 1) > f;
-                var tintColor = isFuture
-                    ? new P.Color(0.2, 0.8, 0.2)
-                    : new P.Color(0.2, 0.4, 1.0);
-
                 var skinOpacity = skin.op / 100;
 
-                VF.flattenDrawables().forEach(function (l) {
+                sorted.forEach(function (l) {   // reuse flatten result from above
                     if (!VF.isLayerRenderable(l, targetF)) return;
                     if (S.cfg.onionIsolate && l.id !== S.activeId) return;
 
@@ -103,45 +120,80 @@
                         var d = res.data;
                         if (!d || (Array.isArray(d) && d.length === 0)) return;
 
-                        var targetLayer = skin.top ? VF.onionLayerFg : VF.onionLayerBg;
+                        var cacheKey = l.id + '|' + si + '|' + targetF + '|' + (isFuture ? 1 : 0);
+                        var reuse = VF._onionCacheReusable(cacheKey, skinOpacity, d);
+                        if (!reuse) needsBuild = true;
 
-                        var skinGroup = new P.Group();
-                        targetLayer.addChild(skinGroup);
+                        jobs.push({
+                            l: l, d: d, skin: skin, targetF: targetF,
+                            isFuture: isFuture, skinOpacity: skinOpacity,
+                            cacheKey: cacheKey, group: reuse
+                        });
+                    }
+                });
+            });
 
-                        // Compensate for camera difference between current and onion frame
-                        if (VF.hasCameraKeyframes && VF.hasCameraKeyframes()) {
-                            var camCur = VF.getCameraAtFrame(f);
-                            var camOnion = VF.getCameraAtFrame(targetF);
-                            var camDx = camOnion.x - camCur.x;
-                            var camDy = camOnion.y - camCur.y;
-                            var camZoomRatio = camCur.zoom / camOnion.zoom;
-                            var camRotDelta = camOnion.rotation - camCur.rotation;
+            if (jobs.length > 0) {
+                var oldZoom = null, oldCenter = null;
+                if (needsBuild) {
+                    oldZoom = VF.view.zoom;
+                    oldCenter = VF.view.center.clone();
+                    VF.view.zoom = 1;
+                    VF.view.center = new P.Point(S.canvas.w / 2, S.canvas.h / 2);
+                    VF.view.update();
+                }
 
-                            // Apply inverse camera delta so onion aligns with current viewport
-                            var camCompensate = new P.Matrix();
-                            camCompensate.translate(camCur.x, camCur.y);
-                            camCompensate.scale(camZoomRatio);
-                            camCompensate.rotate(-camRotDelta);
-                            camCompensate.translate(-camOnion.x, -camOnion.y);
+                jobs.forEach(function (job) {
+                    var l = job.l, skin = job.skin, targetF = job.targetF;
+                    var tintColor = job.isFuture
+                        ? new P.Color(0.2, 0.8, 0.2)
+                        : new P.Color(0.2, 0.4, 1.0);
 
-                            skinGroup.applyMatrix = false;
-                            skinGroup.matrix = camCompensate;
-                        }
+                    var skinOpacity = job.skinOpacity;
 
-                        // ── Apply transforms to onion skins ──
-                        if (VF.getLayerTransform) {
-                            var xfo = VF.getLayerTransform(l, targetF);
-                            var cxo = S.canvas.w / 2, cyo = S.canvas.h / 2;
-                            var mo = new P.Matrix();
-                            mo.translate(cxo + xfo.x, cyo + xfo.y);
-                            mo.rotate(xfo.rotation);
-                            mo.scale(xfo.scaleX, xfo.scaleY);
-                            mo.translate(-cxo, -cyo);
+                    var targetLayer = skin.top ? VF.onionLayerFg : VF.onionLayerBg;
 
-                            skinGroup.applyMatrix = false;
-                            skinGroup.matrix = mo;
-                        }
+                    var skinGroup = job.group;
+                    var isFresh = !skinGroup;
+                    if (isFresh) skinGroup = new P.Group();
+                    targetLayer.addChild(skinGroup);
 
+                    // Compensate for camera difference between current and onion frame
+                    if (VF.hasCameraKeyframes && VF.hasCameraKeyframes()) {
+                        var camCur = VF.getCameraAtFrame(f);
+                        var camOnion = VF.getCameraAtFrame(targetF);
+                        var camDx = camOnion.x - camCur.x;
+                        var camDy = camOnion.y - camCur.y;
+                        var camZoomRatio = camCur.zoom / camOnion.zoom;
+                        var camRotDelta = camOnion.rotation - camCur.rotation;
+
+                        // Apply inverse camera delta so onion aligns with current viewport
+                        var camCompensate = new P.Matrix();
+                        camCompensate.translate(camCur.x, camCur.y);
+                        camCompensate.scale(camZoomRatio);
+                        camCompensate.rotate(-camRotDelta);
+                        camCompensate.translate(-camOnion.x, -camOnion.y);
+
+                        skinGroup.applyMatrix = false;
+                        skinGroup.matrix = camCompensate;
+                    }
+
+                    // ── Apply transforms to onion skins ──
+                    if (VF.getLayerTransform) {
+                        var xfo = VF.getLayerTransform(l, targetF);
+                        var cxo = S.canvas.w / 2, cyo = S.canvas.h / 2;
+                        var mo = new P.Matrix();
+                        mo.translate(cxo + xfo.x, cyo + xfo.y);
+                        mo.rotate(xfo.rotation);
+                        mo.scale(xfo.scaleX, xfo.scaleY);
+                        mo.translate(-cxo, -cyo);
+
+                        skinGroup.applyMatrix = false;
+                        skinGroup.matrix = mo;
+                    }
+
+                    if (isFresh) {
+                        var d = job.d;
                         if (l.type === 'vector') {
                             d.forEach(function (j) {
                                 try {
@@ -181,7 +233,9 @@
                                         var item = skinGroup.importJSON(j);
                                         if (item) tintTree(item, tintColor, skinOpacity);
                                     }
-                                } catch (e) { }
+                                } catch (e) {
+                                    VF.reportError('onion-skin', e);
+                                }
                             });
                         } else if (l.type === 'image' && l.imgData) {
                             var imgR = new P.Raster({ source: l.imgData });
@@ -193,13 +247,21 @@
                             imgR.opacity = skinOpacity * 0.5;
                             skinGroup.addChild(imgR);
                         }
+
+                        // Register in the skin cache (replacing any stale entry)
+                        var stale = VF._onionCache.get(job.cacheKey);
+                        if (stale && stale.group !== skinGroup) stale.group.remove();
+                        VF._onionCache.set(job.cacheKey, { op: skinOpacity, dataRef: d, group: skinGroup });
+                        if (VF._onionCache.size > 300) VF._onionCache.clear();
                     }
                 });
-            });
 
-            VF.view.zoom = oldZoom;
-            VF.view.center = oldCenter;
-            VF.view.update();
+                if (needsBuild) {
+                    VF.view.zoom = oldZoom;
+                    VF.view.center = oldCenter;
+                    VF.view.update();
+                }
+            }
         }
 
         if (VF.applyWobbleEffects) {
@@ -213,22 +275,29 @@
 
                 var cam = VF.getCameraAtFrame ? VF.getCameraAtFrame(f) : { x: S.canvas.w / 2, y: S.canvas.h / 2, zoom: 1, rotation: 0 };
 
-                VF.grainClip.remove();
-                var newClip = new P.Path.Rectangle({
-                    point: [-S.canvas.w / 2, -S.canvas.h / 2],
-                    size: [S.canvas.w, S.canvas.h],
-                    insert: false
-                });
+                // PERFORMANCE: only rebuild the clip path when the camera
+                // or canvas size actually changed since the last render.
+                var grainFp = cam.x + '|' + cam.y + '|' + cam.zoom + '|' + cam.rotation + '|' + S.canvas.w + 'x' + S.canvas.h;
+                if (VF._grainFp !== grainFp) {
+                    VF._grainFp = grainFp;
 
-                // Tell Paper.js this path acts as the clipping mask
-                newClip.clipMask = true;
+                    VF.grainClip.remove();
+                    var newClip = new P.Path.Rectangle({
+                        point: [-S.canvas.w / 2, -S.canvas.h / 2],
+                        size: [S.canvas.w, S.canvas.h],
+                        insert: false
+                    });
 
-                newClip.position = new P.Point(cam.x, cam.y);
-                newClip.scale(1 / cam.zoom);
-                newClip.rotate(cam.rotation);
+                    // Tell Paper.js this path acts as the clipping mask
+                    newClip.clipMask = true;
 
-                VF.grainGroup.insertChild(0, newClip);
-                VF.grainClip = newClip;
+                    newClip.position = new P.Point(cam.x, cam.y);
+                    newClip.scale(1 / cam.zoom);
+                    newClip.rotate(cam.rotation);
+
+                    VF.grainGroup.insertChild(0, newClip);
+                    VF.grainClip = newClip;
+                }
 
                 VF.grainRaster.matrix = new P.Matrix();
                 var scaleX = (S.canvas.w * 1.6) / 1024 / cam.zoom;

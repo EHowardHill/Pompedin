@@ -13,19 +13,28 @@
     });
 
     $('#tgl-stroke').on('click', function () {
+        // With a selection: edit the SELECTED items; new-stroke
+        // defaults (S.cfg) are never touched by selection context.
+        if (VF.hasSelection && VF.hasSelection() && VF.selStyle) {
+            VF.selStyle.autoStroke = !VF.selStyle.autoStroke;
+            $(this).toggleClass('on', VF.selStyle.autoStroke);
+            VF.applyPropertyToSelection('enableStroke', VF.selStyle.autoStroke);
+            return;
+        }
         S.cfg.autoStroke = !S.cfg.autoStroke;
         $(this).toggleClass('on', S.cfg.autoStroke);
-        if (VF.hasSelection && VF.hasSelection()) {
-            VF.applyPropertyToSelection('enableStroke', S.cfg.autoStroke);
-        }
     });
     $('#tgl-fill').on('click', function () {
+        if (VF.hasSelection && VF.hasSelection() && VF.selStyle) {
+            VF.selStyle.autoFill = !VF.selStyle.autoFill;
+            $(this).toggleClass('on', VF.selStyle.autoFill);
+            if (VF.selStyle.autoFill) { VF.selStyle.autoStroke = true; $('#tgl-stroke').addClass('on'); }
+            VF.applyPropertyToSelection('enableFill', VF.selStyle.autoFill);
+            return;
+        }
         S.cfg.autoFill = !S.cfg.autoFill;
         $(this).toggleClass('on', S.cfg.autoFill);
         if (S.cfg.autoFill) { S.cfg.autoStroke = true; $('#tgl-stroke').addClass('on'); }
-        if (VF.hasSelection && VF.hasSelection()) {
-            VF.applyPropertyToSelection('enableFill', S.cfg.autoFill);
-        }
     });
     $('#tgl-onion').on('click', function () {
         S.cfg.onion = !S.cfg.onion;
@@ -53,18 +62,24 @@
 
     // ── Brush Size (Selection-aware) ──
     $('#rng-brush').on('input', function () {
-        S.cfg.brushSize = +$(this).val();
+        var val = +$(this).val();
         $('#v-brush').val(this.value);
-        if (VF.hasSelection && VF.hasSelection()) {
-            VF.applyPropertyToSelection('brushSize', S.cfg.brushSize);
+        if (VF.hasSelection && VF.hasSelection() && VF.selStyle) {
+            VF.selStyle.brushSize = val;
+            VF.applyPropertyToSelection('brushSize', val);
+            return;
         }
+        S.cfg.brushSize = val;
     });
     $('#v-brush').on('change input', function () {
         var val = Math.max(1, Math.min(60, +$(this).val() || 1));
-        S.cfg.brushSize = val; $('#rng-brush').val(val);
-        if (VF.hasSelection && VF.hasSelection()) {
+        $('#rng-brush').val(val);
+        if (VF.hasSelection && VF.hasSelection() && VF.selStyle) {
+            VF.selStyle.brushSize = val;
             VF.applyPropertyToSelection('brushSize', val);
+            return;
         }
+        S.cfg.brushSize = val;
     });
 
     // ── Brush Spacing ──
@@ -174,26 +189,32 @@
 
     // ── Stroke Color (Selection-aware) ──
     $('#clr-stroke').on('input', function () {
-        S.cfg.strokeCol = this.value;
-        if (VF.hasSelection && VF.hasSelection()) {
+        if (VF.hasSelection && VF.hasSelection() && VF.selStyle) {
+            VF.selStyle.strokeCol = this.value;
             VF.applyPropertyToSelection('strokeColor', this.value);
+            return;
         }
+        S.cfg.strokeCol = this.value;
     });
 
     // ── Fill Color (Selection-aware) ──
     $('#clr-fill').on('input', function () {
-        S.cfg.fillCol = this.value;
-        if (VF.hasSelection && VF.hasSelection()) {
+        if (VF.hasSelection && VF.hasSelection() && VF.selStyle) {
+            VF.selStyle.fillCol = this.value;
             VF.applyPropertyToSelection('fillColor', this.value);
+            return;
         }
+        S.cfg.fillCol = this.value;
     });
 
     // ── Texture (Selection-aware) ──
     $('#sel-tex').on('change', function () {
-        S.cfg.tex = this.value;
-        if (VF.hasSelection && VF.hasSelection()) {
+        if (VF.hasSelection && VF.hasSelection() && VF.selStyle) {
+            VF.selStyle.tex = this.value;
             VF.applyPropertyToSelection('texture', this.value);
+            return;
         }
+        S.cfg.tex = this.value;
     });
 
     /* ═══════════════════════════════════════════════════
@@ -215,7 +236,7 @@
             VF._eyeDropperAbort = controller;
             new EyeDropper().open({ signal: controller.signal })
                 .then(function (r) { VF._eyeDropperAbort = null; $(targetInputId).val(r.sRGBHex).trigger('input'); })
-                .catch(function (e) { VF._eyeDropperAbort = null; if (e.name !== 'AbortError') console.log(e); });
+                .catch(function (e) { VF._eyeDropperAbort = null; if (e.name !== 'AbortError') VF.reportError('eyedropper', e); });
             return;
         }
 

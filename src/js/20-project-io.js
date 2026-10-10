@@ -26,8 +26,6 @@
            WINDOW TITLE HELPER
            ═══════════════════════════════════════════════════ */
     VF.updateWindowTitle = function () {
-        if (!window.__TAURI__ || !window.__TAURI__.window) return;
-
         var title = "Pompedin";
         if (S.currentProjectPath) {
             var name = S.currentProjectPath.replace(/\\/g, '/').split('/').pop();
@@ -36,9 +34,7 @@
             title += " - Untitled";
         }
 
-        // Tauri v2 API for window management
-        var win = window.__TAURI__.window.getCurrentWindow();
-        win.setTitle(title).catch(function (e) { console.error("Failed to set title", e); });
+        VF.platform.setWindowTitle(title);
     };
 
     /* ═══════════════════════════════════════════════════
@@ -59,29 +55,8 @@
        are unavailable — write into the app's Documents folder (on iPad
        visible in the Files app; on Android it's the app's external
        documents dir); the returned path becomes currentProjectPath, so
-       subsequent Ctrl+S writes go straight there. */
-    function pickSavePath(invoke) {
-        if (VF.isMobileApp && VF.isMobileApp()) {
-            return invoke('get_documents_dir').then(function (dir) {
-                function p2(n) { return (n < 10 ? '0' : '') + n; }
-                var t = new Date();
-                var stamp = t.getFullYear() + p2(t.getMonth() + 1) + p2(t.getDate()) +
-                    '-' + p2(t.getHours()) + p2(t.getMinutes()) + p2(t.getSeconds());
-                return dir.replace(/[\\/]+$/, '') + '/pompedin-' + stamp + '.json';
-            });
-        }
-
-        var save = window.__TAURI__.dialog.save;
-        var getDir = S.currentProjectPath ? Promise.resolve(null) : invoke('get_projects_dir');
-
-        return getDir.then(function (projDir) {
-            return save({
-                title: 'Save Project',
-                defaultPath: S.currentProjectPath || (projDir + '/my_animation.json'),
-                filters: [{ name: 'Pompedin Project', extensions: ['json'] }]
-            });
-        });
-    }
+       subsequent Ctrl+S writes go straight there. Web: File System
+       Access save picker, or a filename prompt as fallback. */
 
     function _doSaveInner(mode) {
         // Fallback for the autosave timer passing true
@@ -89,43 +64,48 @@
 
         VF.saveFrame();
         var statePayload = getSaveState();
-        var invoke = window.__TAURI__.core.invoke;
 
         if (mode === 'autosave') {
-            return invoke('save_project', {
-                state: statePayload,
-                name: null,
-                isAutosave: true
-            }).catch(function (e) { console.error("Autosave failed", e); });
+            return VF.platform.saveAutosave(statePayload)
+                .catch(function (e) { console.error("Autosave failed", e); });
         }
 
         // Direct Save (Ctrl+S) if we already have a path
         if (mode === 'save' && S.currentProjectPath) {
-            return invoke('save_project_to_path', { state: statePayload, path: S.currentProjectPath })
-                .then(function () {
+            return VF.platform.saveProjectToPath(statePayload, S.currentProjectPath)
+                .then(function (finalPath) {
+                    if (finalPath && finalPath !== S.currentProjectPath) {
+                        S.currentProjectPath = finalPath;
+                        VF.updateWindowTitle();
+                    }
                     var name = S.currentProjectPath.replace(/\\/g, '/').split('/').pop();
                     VF.toast('Saved: ' + name);
                     VF._isDirty = false; // Mark clean
                 })
                 .catch(function (e) {
-                    console.error("Save failed", e);
-                    VF.toast('Save failed');
+                    if (e !== 'cancelled') {
+                        console.error("Save failed", e);
+                        VF.toast('Save failed');
+                    }
                     throw e;
                 });
         }
 
-        // Save As (or Save with no active path) — see pickSavePath for
-        // the iPad Documents-folder fallback.
-        return pickSavePath(invoke).then(function (filePath) {
+        // Save As (or Save with no active path) — see pickProjectSavePath
+        // (platform) for the iPad Documents-folder fallback.
+        return VF.platform.pickProjectSavePath().then(function (filePath) {
             if (!filePath) return Promise.reject('cancelled'); // User cancelled
 
             S.currentProjectPath = filePath; // Update the active path
 
-            return invoke('save_project_to_path', { state: statePayload, path: filePath })
-                .then(function () {
-                    var name = filePath.replace(/\\/g, '/').split('/').pop();
+            return VF.platform.saveProjectToPath(statePayload, filePath)
+                .then(function (finalPath) {
+                    if (finalPath && finalPath !== S.currentProjectPath) {
+                        S.currentProjectPath = finalPath;
+                    }
+                    var name = (finalPath || filePath).replace(/\\/g, '/').split('/').pop();
                     VF.updateWindowTitle();
-                    if (VF.isMobileApp && VF.isMobileApp()) {
+                    if (VF.platform.env === 'tauri' && VF.isMobileApp && VF.isMobileApp()) {
                         VF.toast(VF.t('toast.savedToDocuments', { name: name }));
                     } else {
                         VF.toast('Saved: ' + name);
@@ -165,9 +145,7 @@
        NEW PROJECT
        ═══════════════════════════════════════════════════ */
     $('#btn-new').on('click', function () {
-        var ask = window.__TAURI__.dialog.ask;
-
-        ask('Start new project? Unsaved changes will be lost.', {
+        VF.platform.ask('Start new project? Unsaved changes will be lost.', {
             title: 'New Project',
             kind: 'warning'
         }).then(function (confirmed) {
@@ -293,13 +271,9 @@
        LOAD PROJECT — native open dialog, with corrupt-file recovery
        ═══════════════════════════════════════════════════ */
     $('#btn-load').on('click', function () {
-        var invoke = window.__TAURI__.core.invoke;
-        var open = window.__TAURI__.dialog.open;
-        var ask = window.__TAURI__.dialog.ask;
-
         // Load + validate; rejects on read/parse/structure errors.
         function tryLoad(path) {
-            return invoke('load_project_from_path', { path: path }).then(function (d) {
+            return VF.platform.loadProjectFromPath(path).then(function (d) {
                 var state = (d && d.state) ? d.state : d;
                 var err = validateState(state);
                 if (err) throw err;
@@ -307,14 +281,7 @@
             });
         }
 
-        invoke('get_projects_dir').then(function (projDir) {
-            return open({
-                title: 'Open Project',
-                defaultPath: projDir,
-                multiple: false,
-                filters: [{ name: 'Pompedin Project', extensions: ['json'] }]
-            });
-        }).then(function (filePath) {
+        VF.platform.pickOpenProject().then(function (filePath) {
             if (!filePath) return;
 
             tryLoad(filePath).catch(function (primaryErr) {
@@ -329,7 +296,7 @@
                 });
 
                 return chain.then(function (state) {
-                    return ask(
+                    return VF.platform.ask(
                         'This file could not be read, but a backup from a previous save was found. Open the backup instead?',
                         { title: 'Project Recovery', kind: 'warning' }
                     ).then(function (confirmed) {
@@ -365,10 +332,6 @@
        abnormally. Offer to restore it, newest copy first.
        ═══════════════════════════════════════════════════ */
     VF.checkAutosaveRecovery = function () {
-        if (!window.__TAURI__) return;
-        var invoke = window.__TAURI__.core.invoke;
-        var ask = window.__TAURI__.dialog.ask;
-
         // Keep the autosave timer from clobbering the file while the
         // user decides (doSave skips autosave while this is pending).
         VF._recoveryPending = true;
@@ -376,7 +339,7 @@
         var candidates = ['autosave.json', 'autosave.json.bak1', 'autosave.json.bak2', 'autosave.json.bak3'];
         var chain = Promise.reject();
         candidates.forEach(function (f) {
-            chain = chain.catch(function () { return invoke('load_project', { filename: f }); });
+            chain = chain.catch(function () { return VF.platform.loadProjectFile(f); });
         });
 
         chain.then(function (d) {
@@ -385,14 +348,14 @@
             if (err || !state.layers || state.layers.length === 0) {
                 // Empty or unusable autosave — clear it so we don't
                 // re-prompt on every launch.
-                return invoke('clear_autosave');
+                return VF.platform.clearAutosave();
             }
 
-            return ask(
+            return VF.platform.ask(
                 'Pompedin found an unsaved autosave from a previous session that ended unexpectedly. Restore it now?',
                 { title: 'Crash Recovery', kind: 'warning' }
             ).then(function (confirmed) {
-                if (!confirmed) return invoke('clear_autosave');
+                if (!confirmed) return VF.platform.clearAutosave();
 
                 try {
                     VF.applyLoadedState(state, null);   // stays untitled — never bind the autosave path

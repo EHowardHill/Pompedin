@@ -209,27 +209,18 @@
 
             var dataUrl = sheet.toDataURL('image/png');
 
-            /* ── Save via Tauri dialog ── */
-            if (window.__TAURI__) {
-                var invoke = window.__TAURI__.core.invoke;
-                var save = window.__TAURI__.dialog.save;
-
-                save({
-                    title: 'Export Spritesheet',
-                    defaultPath: 'spritesheet_' + cols + 'x' + rows + '.png',
-                    filters: [{ name: 'Image', extensions: ['png'] }]
-                }).then(function (filePath) {
-                    if (!filePath) return;
-                    invoke('export_png', { image: dataUrl, path: filePath })
-                        .then(function () {
-                            VF.toast('Spritesheet saved! (' + cols + '×' + rows + ', ' + count + ' frames)');
-                        })
-                        .catch(function (err) { VF.toast('Export failed: ' + err); });
-                }).catch(function (err) { console.error("Dialog error:", err); });
-            } else {
-                /* Fallback: browser download */
-                downloadDataUrl(dataUrl, 'spritesheet.png');
-            }
+            /* ── Save (native dialog on desktop, picker/download on web) ── */
+            VF.platform.saveDataUrl(dataUrl, 'spritesheet_' + cols + 'x' + rows + '.png', {
+                title: 'Export Spritesheet',
+                filters: [{ name: 'Image', extensions: ['png'] }]
+            }).then(function (res) {
+                if (res.saved) {
+                    VF.toast('Spritesheet saved! (' + cols + '×' + rows + ', ' + count + ' frames)');
+                }
+            }).catch(function (err) {
+                VF.toast('Export failed: ' + err);
+                console.error('Export error:', err);
+            });
         }, 50);
     };
 
@@ -618,34 +609,18 @@
                         }
                         var dataUrl = 'data:image/gif;base64,' + btoa(binary);
 
-                        if (window.__TAURI__) {
-                            var invoke = window.__TAURI__.core.invoke;
-                            var save = window.__TAURI__.dialog.save;
-
-                            save({
-                                title: 'Export Animated GIF',
-                                defaultPath: 'animation.gif',
-                                filters: [{ name: 'GIF Image', extensions: ['gif'] }]
-                            }).then(function (filePath) {
-                                if (!filePath) {
-                                    $btn.prop('disabled', false).html(origText);
-                                    return;
-                                }
-                                invoke('export_png', { image: dataUrl, path: filePath })
-                                    .then(function () {
-                                        VF.toast('GIF exported! (' + result.frames.length + ' frames)');
-                                    })
-                                    .catch(function (err) { VF.toast('Export failed: ' + err); })
-                                    .finally(function () {
-                                        $btn.prop('disabled', false).html(origText);
-                                    });
-                            }).catch(function () {
-                                $btn.prop('disabled', false).html(origText);
-                            });
-                        } else {
-                            downloadDataUrl(dataUrl, 'animation.gif');
+                        VF.platform.saveDataUrl(dataUrl, 'animation.gif', {
+                            title: 'Export Animated GIF',
+                            filters: [{ name: 'GIF Image', extensions: ['gif'] }]
+                        }).then(function (res) {
+                            if (res.saved) {
+                                VF.toast('GIF exported! (' + result.frames.length + ' frames)');
+                            }
+                        }).catch(function (err) {
+                            VF.toast('Export failed: ' + err);
+                        }).finally(function () {
                             $btn.prop('disabled', false).html(origText);
-                        }
+                        });
                     } catch (err) {
                         console.error('GIF encode error:', err);
                         VF.toast('GIF encoding failed: ' + err.message);
@@ -667,16 +642,8 @@
        ═══════════════════════════════════════════════════ */
 
     VF.exportSequence = function () {
-        if (!window.__TAURI__) { VF.toast('Requires Tauri desktop'); return; }
-
-        var invoke = window.__TAURI__.core.invoke;
-        var openDialog = window.__TAURI__.dialog.open;
-
-        openDialog({
-            title: 'Choose folder for PNG sequence',
-            directory: true
-        }).then(function (folder) {
-            if (!folder) return;
+        VF.platform.pickExportDirectory('Choose folder for PNG sequence').then(function (folder) {
+            if (!folder) return; // User cancelled
 
             var $btn = $('#btn-export-seq');
             var origText = $btn.html();
@@ -699,12 +666,10 @@
                     var frameNum = String(result.range.from + i + 1);
                     while (frameNum.length < padLen) frameNum = '0' + frameNum;
                     var filename = 'frame_' + frameNum + '.png';
-                    var path = folder + '/' + filename;
-                    if (folder.indexOf('\\') > -1) path = folder + '\\' + filename;
 
                     var dataUrl = result.frames[i].toDataURL('image/png');
 
-                    invoke('export_png', { image: dataUrl, path: path })
+                    VF.platform.writeExportFile(folder, filename, dataUrl)
                         .then(function () { saveNext(i + 1); })
                         .catch(function (err) {
                             VF.toast('Failed at frame ' + frameNum + ': ' + err);
@@ -716,20 +681,6 @@
             console.error('Dialog error:', err);
         });
     };
-
-
-    /* ═══════════════════════════════════════════════════
-       BROWSER DOWNLOAD FALLBACK
-       ═══════════════════════════════════════════════════ */
-
-    function downloadDataUrl(dataUrl, filename) {
-        var a = document.createElement('a');
-        a.href = dataUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    }
 
 
     /* ═══════════════════════════════════════════════════

@@ -40,6 +40,16 @@ Frame-by-frame vector animation tool, built with Tauri 2 + Rust + Paper.js.
    excluded). Dev mode keeps serving `src/` directly, so iteration is
    unaffected. See `scripts/build-frontend.mjs`.
 
+4. **Run as a plain web app** (no Tauri window, browser features):
+
+   ```bash
+   npm run serve          # http://localhost:1420
+   ```
+
+   The same frontend can be deployed as a static site — see
+   [docs/WEB-DEPLOY.md](docs/WEB-DEPLOY.md) for the NGINX/Ubuntu
+   walkthrough and the web feature matrix.
+
 ## Documentation
 
 - **User manual** — [docs/MANUAL.md](docs/MANUAL.md): interface tour,
@@ -55,6 +65,9 @@ Frame-by-frame vector animation tool, built with Tauri 2 + Rust + Paper.js.
 - **QA checklist** — [docs/QA-CHECKLIST.md](docs/QA-CHECKLIST.md)
 - **Preferences audit** — [docs/PREFERENCES.md](docs/PREFERENCES.md)
 - **FFmpeg licensing** — [docs/FFMPEG-LICENSING.md](docs/FFMPEG-LICENSING.md)
+- **Web deployment** — [docs/WEB-DEPLOY.md](docs/WEB-DEPLOY.md): running
+  the same frontend as a browser app — platform abstraction layer,
+  browser storage/fallbacks, static NGINX deployment guide.
 
 ## License
 

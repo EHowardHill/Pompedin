@@ -134,22 +134,16 @@
         view.update();
         VF.render(); /* Trigger a full re-render to restore wobble state properly */
 
-        // TAURI IPC EXPORT LOGIC
-        const { invoke } = window.__TAURI__.core;
-        const { save } = window.__TAURI__.dialog;
-
-        save({
+        // PLATFORM EXPORT (native save dialog on desktop, save picker or
+        // download in the browser)
+        VF.platform.saveDataUrl(url, 'frame_' + (S.tl.frame + 1) + '.png', {
             title: 'Export Frame',
-            defaultPath: 'frame_' + (S.tl.frame + 1) + '.png',
             filters: [{ name: 'Image', extensions: ['png'] }]
-        }).then(function (filePath) {
-            if (filePath) {
-                invoke('export_png', { image: url, path: filePath })
-                    .then(function () { VF.toast('Saved successfully!'); })
-                    .catch(function (err) { VF.toast('Export failed: ' + err); });
-            }
+        }).then(function (res) {
+            if (res.saved) VF.toast('Saved successfully!');
         }).catch(function (err) {
-            console.error("Dialog error:", err);
+            VF.toast('Export failed: ' + err);
+            console.error('Export error:', err);
         });
     };
 

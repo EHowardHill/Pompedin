@@ -8,15 +8,11 @@
     VF.showAbout = function () {
         var verEl = document.getElementById('about-version');
         if (verEl) {
-            if (window.__TAURI__ && window.__TAURI__.app) {
-                window.__TAURI__.app.getVersion().then(function (v) {
-                    verEl.textContent = 'v' + v;
-                }).catch(function () {
-                    verEl.textContent = '';
-                });
-            } else {
+            VF.platform.getVersion().then(function (v) {
+                verEl.textContent = v ? 'v' + v : '';
+            }).catch(function () {
                 verEl.textContent = '';
-            }
+            });
         }
         $('#modal-about').show();
     };
@@ -49,8 +45,7 @@
 
         // Crash Reports (local-only diagnostics — see 24-init.js hooks)
         $('#about-open-crash').on('click', function () {
-            if (!window.__TAURI__) return;
-            window.__TAURI__.core.invoke('open_crash_reports').catch(function (e) {
+            VF.platform.openCrashReports().catch(function (e) {
                 VF.toast('Could not open the crash reports folder');
                 console.error(e);
             });

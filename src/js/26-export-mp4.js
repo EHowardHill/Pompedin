@@ -4,8 +4,8 @@
     var S = VF.S;
 
     VF.exportMP4 = async function () {
-        if (!window.__TAURI__) {
-            VF.toast("MP4 Export requires the Tauri desktop environment.");
+        if (!VF.platform.capabilities.mp4Export) {
+            VF.toast("MP4 export is available in the Pompedin desktop app.");
             return;
         }
 

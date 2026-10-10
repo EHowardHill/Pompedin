@@ -23,16 +23,13 @@
        ═══════════════════════════════════════════════════ */
 
     /**
-     * (Re)load the brush list from the Rust backend.
+     * (Re)load the brush list from the platform backend (Rust data dir
+     * on desktop, the shipped assets/brushes/ set on the web build).
      * Clears the tinted-canvas cache so updated PNGs take effect.
      * Can be called at init or any time the user clicks Refresh.
      */
     VF.refreshBrushes = function () {
-        if (!window.__TAURI__) return;
-
-        var invoke = window.__TAURI__.core.invoke;
-
-        invoke('list_brushes').then(function (files) {
+        VF.platform.listBrushes().then(function (files) {
             var sel = $('#sel-tex');
             sel.empty();
             sel.append('<option value="none">N/A</option>');
@@ -46,7 +43,7 @@
             files.forEach(function (f) {
                 sel.append('<option value="' + f + '">' + f.replace('.png', '') + '</option>');
 
-                invoke('get_brush_data', { filename: f })
+                VF.platform.getBrushData(f)
                     .then(function (base64Data) {
                         var img = new Image();
                         img.onload = function () {
@@ -87,10 +84,12 @@
        ═══════════════════════════════════════════════════ */
 
     $('#btn-open-brush-folder').on('click', function () {
-        if (!window.__TAURI__) return;
-        var invoke = window.__TAURI__.core.invoke;
+        if (!VF.platform.capabilities.brushFolder) {
+            VF.toast('Brush folders are a desktop feature — the web build ships its brush set inside the app');
+            return;
+        }
 
-        invoke('open_brush_folder').then(function () {
+        VF.platform.openBrushFolder().then(function () {
             VF.toast('Opened brush folder');
         }).catch(function (err) {
             VF.toast('Could not open folder: ' + err);
@@ -110,46 +109,41 @@
         VF.loadPrefs();
 
         // Load brushes on startup (silently, without the per-refresh toast)
-        if (window.__TAURI__) {
-            var invoke = window.__TAURI__.core.invoke;
+        VF.platform.listBrushes().then(function (files) {
+            var sel = $('#sel-tex');
+            sel.empty();
+            sel.append('<option value="none">N/A</option>');
 
-            invoke('list_brushes').then(function (files) {
-                var sel = $('#sel-tex');
-                sel.empty();
-                sel.append('<option value="none">N/A</option>');
+            files.forEach(function (f) {
+                sel.append('<option value="' + f + '">' + f.replace('.png', '') + '</option>');
 
-                files.forEach(function (f) {
-                    sel.append('<option value="' + f + '">' + f.replace('.png', '') + '</option>');
-
-                    invoke('get_brush_data', { filename: f })
-                        .then(function (base64Data) {
-                            var img = new Image();
-                            img.onload = function () {
-                                VF.baseBrushes[f] = img;
-                            };
-                            img.src = 'data:image/png;base64,' + base64Data;
-                        })
-                        .catch(function (err) {
-                            console.error("Failed to load brush data for " + f, err);
-                        });
-                });
-
-                sel.val(S.cfg.tex || 'none');
-            }).catch(function (err) {
-                console.error("Error listing brushes:", err);
+                VF.platform.getBrushData(f)
+                    .then(function (base64Data) {
+                        var img = new Image();
+                        img.onload = function () {
+                            VF.baseBrushes[f] = img;
+                        };
+                        img.src = 'data:image/png;base64,' + base64Data;
+                    })
+                    .catch(function (err) {
+                        console.error("Failed to load brush data for " + f, err);
+                    });
             });
 
-            // Log the data directory path for the user
-            invoke('get_data_dir').then(function (dir) {
-                console.log('pompedin data directory: ' + dir);
-                console.log('Place brush PNGs in: ' + dir + '/brush/');
-            });
-        } else {
-            console.warn("Tauri API not found. App must be run via Tauri desktop window.");
-        }
+            sel.val(S.cfg.tex || 'none');
+        }).catch(function (err) {
+            console.error("Error listing brushes:", err);
+        });
 
-        // Window Close Interception
-        if (window.__TAURI__ && window.__TAURI__.window) {
+        // Log where persistent data lives (data dir on desktop, browser
+        // storage on web)
+        VF.platform.describeStorage().then(function (lines) {
+            lines.forEach(function (l) { console.log(l); });
+        }).catch(function () { });
+
+        // Window Close Interception (desktop only — web relies on the
+        // browser's own beforeunload warning)
+        if (VF.platform.capabilities.windowClose && window.__TAURI__ && window.__TAURI__.window) {
             var appWindow = window.__TAURI__.window.getCurrentWindow();
             appWindow.center();
 
@@ -173,7 +167,7 @@
                 } else {
                     // Clean exit — remove the autosave so the next launch
                     // doesn't offer crash recovery (see checkAutosaveRecovery).
-                    try { await window.__TAURI__.core.invoke('clear_autosave'); } catch (e) { }
+                    try { await VF.platform.clearAutosave(); } catch (e) { }
                     // If there are no unsaved changes, explicitly destroy the window right now.
                     // We use destroy() instead of close() to prevent an infinite loop!
                     await appWindow.destroy();
@@ -189,7 +183,7 @@
                 VF._isDirty = false;
                 // Clean exit — remove the autosave so the next launch
                 // doesn't offer crash recovery.
-                try { await window.__TAURI__.core.invoke('clear_autosave'); } catch (e) { }
+                try { await VF.platform.clearAutosave(); } catch (e) { }
                 await appWindow.destroy();
             });
 
@@ -201,7 +195,7 @@
                     $('#modal-close').hide();
                     // Clean exit — remove the autosave so the next launch
                     // doesn't offer crash recovery.
-                    try { await window.__TAURI__.core.invoke('clear_autosave'); } catch (e) { }
+                    try { await VF.platform.clearAutosave(); } catch (e) { }
                     await appWindow.destroy();
                 } catch (e) {
                     // Save was cancelled or failed — restore button so they can retry
@@ -253,19 +247,17 @@
 
         /* ── CRASH REPORTING (local-only; About → Crash Reports) ──
            Uncaught JS errors and Rust panics are appended to a local
-           crash log on the user's machine. Nothing is ever sent
-           anywhere; sharing the file is the user's explicit choice. */
-        if (window.__TAURI__) {
-            var _invoke = window.__TAURI__.core.invoke;
+           crash log on the user's machine (browser storage on the web
+           build). Nothing is ever sent anywhere; sharing the file is
+           the user's explicit choice. */
+        {
             var _lastCrashLog = 0;
 
             function recordCrash(kind, detail) {
                 var now = Date.now();
                 if (now - _lastCrashLog < 2000) return;   // throttle error storms
                 _lastCrashLog = now;
-                try {
-                    _invoke('log_crash', { message: kind + ': ' + detail });
-                } catch (e) { /* best effort */ }
+                VF.platform.logCrash(kind + ': ' + detail).catch(function () { });
             }
 
             window.addEventListener('error', function (ev) {
@@ -278,7 +270,7 @@
             });
 
             // Mention saved crash details from the previous session, once
-            _invoke('consume_crash_flag').then(function (crashed) {
+            VF.platform.consumeCrashFlag().then(function (crashed) {
                 if (crashed) {
                     VF.toast('A crash report from the previous session was saved — About → Crash Reports');
                 }

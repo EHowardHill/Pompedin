@@ -345,35 +345,17 @@
        ═══════════════════════════════════════════════════ */
     $(document).ready(function () {
 
-        /* Load audio button — opens native file dialog */
+        /* Load audio button — native file dialog on desktop, browser
+           file picker on the web build */
         $('#btn-load-audio').on('click', function () {
-            var invoke = window.__TAURI__.core.invoke;
-            var open = window.__TAURI__.dialog.open;
+            VF.platform.importAudio().then(function (picked) {
+                if (!picked) return; // User cancelled
 
-            open({
-                title: 'Load Audio Track',
-                multiple: false,
-                filters: [{
-                    name: 'Audio Files',
-                    extensions: ['wav', 'mp3', 'ogg', 'flac', 'aac', 'm4a', 'webm']
-                }]
-            }).then(function (filePath) {
-                if (!filePath) return; // User cancelled
-
-                // Read the file via Rust backend
-                invoke('read_file_base64', { path: filePath }).then(function (result) {
-                    var base64Data = result.data;
-                    var filename = result.filename;
-
-                    // Decode the audio for playback
-                    loadAudioFromBase64(base64Data, filename, false);
-
-                }).catch(function (err) {
-                    VF.toast('Failed to read audio file: ' + err);
-                    console.error('Audio read error:', err);
-                });
+                // Decode the audio for playback
+                loadAudioFromBase64(picked.base64, picked.filename, false);
             }).catch(function (err) {
-                console.error('Dialog error:', err);
+                VF.toast('Failed to read audio file: ' + err);
+                console.error('Audio read error:', err);
             });
         });
 
@@ -381,8 +363,7 @@
         $('#btn-remove-audio').on('click', function () {
             if (!A.buffer) return;
 
-            var ask = window.__TAURI__.dialog.ask;
-            ask('Remove audio track?', {
+            VF.platform.ask('Remove audio track?', {
                 title: 'Remove Audio',
                 kind: 'warning'
             }).then(function (confirmed) {

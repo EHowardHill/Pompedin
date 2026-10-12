@@ -20,7 +20,15 @@
  * Usage: node scripts/build-frontend.mjs [--no-minify]
  */
 
-import { transform } from 'esbuild';
+let transform;
+try {
+    ({ transform } = await import('esbuild'));
+} catch (e) {
+    console.error('Missing build dependencies (esbuild).');
+    console.error('Run `npm install` once in the repo root, then re-run this script.');
+    process.exit(1);
+}
+
 import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync, copyFileSync } from 'node:fs';
 import { join, dirname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';

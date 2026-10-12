@@ -59,19 +59,49 @@ On the server, once per machine:
 sudo apt install nginx
 ```
 
-Copy the bundle (from a machine with the repo):
+There are two ways to get `src-dist/` onto the box. Either way, point
+nginx at **`src-dist/`** — never at the repo checkout itself, or the
+server would ship `.git/`, sources, and tests over HTTP.
+
+### Option A — clone and build on the server
+
+The repo needs Node (v18+) to build, but nothing at runtime:
+
+```bash
+cd /var/www/Pompedin
+npm install               # build deps (esbuild); not part of the clone
+npm run build:frontend
+```
+
+`node_modules/` is gitignored, so a fresh clone always needs
+`npm install` first — the build fails with `ERR_MODULE_NOT_FOUND:
+Cannot find package 'esbuild'` otherwise. If npm's allow-scripts policy
+blocks esbuild's postinstall (npm ≥ 11) and the build then complains
+about a missing esbuild binary, run
+`node node_modules/esbuild/install.js` once and re-run the build.
+
+Future updates:
+
+```bash
+git pull && npm install && npm run build:frontend
+```
+
+### Option B — build anywhere, ship only the bundle
+
+From a machine with the repo (no Node needed on the server):
 
 ```bash
 npm run build:frontend
 rsync -av --delete src-dist/ user@server:/var/www/Pompedin/
 ```
 
-`/var/www/Pompedin` needs no Node, no Rust, no FFmpeg — only static
-files.
+With this layout the nginx `root` below becomes
+`/var/www/Pompedin` (the bundle directory itself).
 
 ### Server block
 
-`/etc/nginx/sites-available/pompedin`:
+`/etc/nginx/sites-available/pompedin` (Option A layout — adjust
+`root` for Option B as noted above):
 
 ```nginx
 server {
@@ -79,8 +109,15 @@ server {
     listen [::]:80;
     server_name pompedin.example.com;
 
-    root /var/www/Pompedin;
+    root /var/www/Pompedin/src-dist;
     index index.html;
+
+    # Never serve dotfiles (.git, .gitignore, …) if the root ever
+    # changes to a repo checkout
+    location ~ /\. {
+        deny all;
+        return 404;
+    }
 
     # Serve real files; everything else 404s (single-page app, no routes)
     location / {
